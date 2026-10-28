@@ -7639,6 +7639,11 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
 #g5SeatAdm .g5s{height:34px;font-size:11px;cursor:pointer}
 #g5SeatAdm .g5s.sel{outline:2px solid var(--gold);outline-offset:1px}
 #g5SeatAdm .g5s[data-occ]{cursor:grab;touch-action:none;user-select:none}#g5SeatAdm .g5s.dg{outline:2px dashed var(--gold);outline-offset:1px;opacity:.6}
+.g5card{position:fixed;z-index:9998;display:none;min-width:230px;max-width:280px;padding:10px 12px;border-radius:10px;border:1px solid var(--gold,#C9A227);background:var(--bg,#0f1b33);color:var(--ink,#e8ecf4);box-shadow:0 10px 28px rgba(0,0,0,.35);font-size:12px;line-height:1.5;pointer-events:none}
+.g5card .g5ct{font-size:14px;font-weight:900;margin-bottom:6px}.g5card .g5ct small{font-weight:500;color:var(--mute,#9aa6bd);margin-left:4px}
+.g5card div:not(.g5ct):not(.g5cf){display:flex;justify-content:space-between;gap:10px;padding:2px 0;border-top:1px dashed rgba(127,127,127,.2)}
+.g5card span{color:var(--mute,#9aa6bd)}.g5card i{font-style:normal;color:var(--mute,#9aa6bd);font-weight:500}.g5card .g5cf{margin-top:6px;font-size:11px;color:var(--gold,#C9A227)}
+#g5Real .g5s.admg{cursor:grab;touch-action:none;user-select:none;color:var(--ink)}
 .g5ghost{position:fixed;z-index:9999;pointer-events:none;padding:6px 10px;border-radius:8px;background:var(--gold,#C9A227);color:#0b1730;font-size:12px;font-weight:900;box-shadow:0 6px 18px rgba(0,0,0,.3)}
 body.g5dragging,body.g5dragging *{cursor:grabbing!important;user-select:none}
 #g5SeatAdm .g5s.ov{background:rgba(232,185,60,.25);border:1px solid var(--gold);color:var(--gold)}
@@ -7675,16 +7680,18 @@ body.g5dragging,body.g5dragging *{cursor:grabbing!important;user-select:none}
     for(let r=0;r<R.rows;r++){ for(let c=0;c<R.cols;c++){ if(c===R.aisle) h+='<div class="g5aisle"></div>'; k++;
       const a=(A[view]||{})[k], isMe=off&&me&&me.room===view&&me.seat===k, pr=present(view,k);
       const cls="g5s"+(a?" as":"")+(pr?(away?" away":" in"):"")+(isMe?" me":"");
-      const lab=a?(isMe?"나":mask(a.name)):k;
+      const adm=!!window.ccPreview, lab=a?(isMe?"나":(adm?a.name:mask(a.name))):k;
       const can=picking()&&!a; 
-      h+='<div class="'+cls+(can?' pk':'')+(pick&&pick.room===view&&pick.seat===k?' sel':'')+'"'+(can?' data-pk="'+k+'" role="button" tabindex="0"':'')+' title="'+view+'반 '+k+'번'+(a?' · 지정석 '+esc(mask(a.name))+(pr?(away?' · 자리 비움':' · 공부 중'):' · 아직 안 옴'):' · 빈자리')+'">'+esc(lab)+'</div>'; } }
+      h+='<div class="'+cls+(can?' pk':'')+(adm&&a?' admg':'')+(pick&&pick.room===view&&pick.seat===k?' sel':'')+'" data-k="'+k+'" data-room="'+view+'"'+(adm&&a?' data-occ="1" data-card="1"':'')+(can?' data-pk="'+k+'" role="button" tabindex="0"':'')+(adm&&a?'':' title="'+view+'반 '+k+'번'+(a?' · 지정석 '+esc(mask(a.name))+(pr?(away?' · 자리 비움':' · 공부 중'):' · 아직 안 옴'):' · 빈자리')+'"')+'>'+esc(lab)+'</div>'; } }
     const pkBar=picking()?('<div class="g5pkbar">'+(pick?'<b>'+pick.room+'반 '+pick.seat+'번</b>을 내 지정석으로 정할까요? 한 번 정하면 앞으로 계속 이 자리이고, 바꾸려면 관리자에게 요청해야 합니다 <span><button type="button" id="g5PkOk">이 자리로 정하기</button><button type="button" id="g5PkNo">다시 고르기</button></span>':'🪑 <b>처음 오셨네요.</b> 관리자가 알려 준 <b>내 자리</b>를 아래 도면에서 눌러 주세요 (빈자리만 누를 수 있습니다)')+'</div>'):'';
     host.innerHTML=pkBar+'<div class="g5rh"><b>🏫 실강의실</b><small style="color:var(--mute);font-size:.68rem">오프라인 관리반 · 지정석</small><span class="g5tmp">임시 배치 · 도면 반영 전</span>'+
       '<span class="g5rtabs">'+Object.keys(G5_ROOMS).map(function(r){ return '<button type="button" class="g5rtab'+(r===view?' on':'')+'" data-r="'+r+'">'+r+'반'+(me&&me.room===r&&off?' ★':'')+'<small>'+inN(r)+'/'+cnt(r)+'</small></button>'; }).join("")+'</span></div>'+
       '<div class="g5front">칠판 · 강단</div><div class="g5plan">'+h+'</div>'+
+      (window.ccPreview?'<div style="font-size:.7rem;color:var(--gold);margin:-2px 0 6px">관리자 보기 — 이름 전체 표시 · 자리에 마우스를 올리면 수강생 정보 · 끌어서 자리 이동</div>':'')+
       '<div class="g5leg"><span><i></i>빈자리</span><span><i class="as"></i>지정석 · 아직 안 옴</span><span><i class="in"></i>공부 중</span><span><i class="away"></i>자리 비움</span><span>탭 숫자 = 지금 공부 중 / 지정석 수</span></div>'+
       (window.G5_TESTERS&&G5_TESTERS[meId()]?'<div class="g5tst">점검용 보기 <button type="button" data-v="off" class="'+(off?'on':'')+'">실강생으로</button><button type="button" data-v="on" class="'+(off?'':'on')+'">온라인생으로</button></div>':'');
     host.querySelectorAll("[data-r]").forEach(function(b){ b.onclick=function(){ view=b.dataset.r; drawReal(); }; });
+    if(window.ccPreview) host.querySelectorAll("[data-occ]").forEach(function(b){ b.onpointerdown=startDrag; });
     host.querySelectorAll("[data-pk]").forEach(function(b){ const go=function(){ pick={room:view,seat:+b.dataset.pk}; drawReal(); }; b.onclick=go; b.onkeydown=function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); go(); } }; });
     const ok=document.getElementById("g5PkOk"); if(ok) ok.onclick=function(){ const A=asLoad(); A[pick.room]=A[pick.room]||{};
       if(A[pick.room][pick.seat]){ toast("방금 다른 수강생이 그 자리를 정했습니다 — 다른 자리를 골라 주세요"); pick=null; drawReal(); return; }
@@ -7734,27 +7741,48 @@ body.g5dragging,body.g5dragging *{cursor:grabbing!important;user-select:none}
     if(!ghost){ if(Math.abs(e.clientX-pd.x)+Math.abs(e.clientY-pd.y)<6) return;
       ghost=document.createElement("div"); ghost.className="g5ghost"; ghost.textContent=pd.label; document.body.appendChild(ghost); document.body.classList.add("g5dragging"); }
     e.preventDefault(); ghost.style.left=(e.clientX+8)+"px"; ghost.style.top=(e.clientY+8)+"px";
-    const el=document.elementFromPoint(e.clientX,e.clientY), p=document.getElementById("g5SeatAdm"); if(!p) return;
-    p.querySelectorAll(".ov").forEach(function(o){ o.classList.remove("ov"); });
-    const seat=el&&el.closest&&el.closest("#g5SeatAdm [data-k]"); if(seat) seat.classList.add("ov");
-    const tab=el&&el.closest&&el.closest("#g5SeatAdm [data-ar]");
-    if(tab&&tab.dataset.ar!==aView){ if(overTab!==tab.dataset.ar){ overTab=tab.dataset.ar; setTimeout(function(){ if(pd&&overTab===tab.dataset.ar&&aView!==overTab){ aView=overTab; admDraw(); } },350); } } else overTab=null;
+    const el=document.elementFromPoint(e.clientX,e.clientY);
+    document.querySelectorAll("#g5SeatAdm .ov,#g5Real .ov").forEach(function(o){ o.classList.remove("ov"); });
+    const seat=el&&el.closest&&el.closest("[data-k][data-room]"); if(seat) seat.classList.add("ov");
+    const tab=el&&el.closest&&el.closest("#g5SeatAdm [data-ar],#g5Real [data-r]"), tr=tab?(tab.dataset.ar||tab.dataset.r):null, cur=tab&&tab.dataset.ar?aView:view;
+    if(tab&&tr!==cur){ if(overTab!==tr){ overTab=tr; setTimeout(function(){ if(pd&&overTab===tr){ if(tab.dataset.ar){ aView=tr; admDraw(); } else { view=tr; drawReal(); } } },350); } } else overTab=null;
   },{passive:false});
   document.addEventListener("pointerup",function(e){ if(!pd) return; const f=pd.from, had=!!ghost; pd=null; overTab=null;
     if(ghost){ ghost.remove(); ghost=null; document.body.classList.remove("g5dragging"); }
     if(!had) return; justDragged=true; setTimeout(function(){ justDragged=false; },50);
-    const el=document.elementFromPoint(e.clientX,e.clientY), seat=el&&el.closest&&el.closest("#g5SeatAdm [data-k]");
-    if(seat) moveSeat(f,{room:aView,seat:+seat.dataset.k}); else admDraw(); });
+    const el=document.elementFromPoint(e.clientX,e.clientY), seat=el&&el.closest&&el.closest("[data-k][data-room]");
+    if(seat) moveSeat(f,{room:seat.dataset.room,seat:+seat.dataset.k}); else { admDraw(); drawReal(); } });
+  function startDrag(e){ if(e.button>0) return; hideCard(); const b=e.currentTarget; pd={x:e.clientX,y:e.clientY,from:{room:b.dataset.room,seat:+b.dataset.k},label:b.textContent,id:e.pointerId}; }
   document.addEventListener("pointercancel",function(){ pd=null; if(ghost){ ghost.remove(); ghost=null; document.body.classList.remove("g5dragging"); } });
+  /* 관리자: 자리에 마우스를 올리면 수강생 정보 카드 */
+  let card=null;
+  function hideCard(){ if(card) card.style.display="none"; }
+  function cardHTML(room,k){ const a=(asLoad()[room]||{})[k]; if(!a) return "";
+    const me=user&&(user.login_id||user.id)===a.login, st=me&&window.ccStudy?ccStudy.data():null;
+    const row=function(l,v){ return '<div><span>'+l+'</span><b>'+v+'</b></div>'; };
+    const pend='<i>서버 연결 후</i>';
+    return '<div class="g5ct">'+esc(a.name)+' <small>'+esc(a.login)+'</small></div>'+
+      row("자리",'실강의실 '+room+'반 '+k+'번 (지정석)')+
+      row("정한 방법",a.by==="self"?'본인이 첫 로그인 때 선택':'관리자 배정')+(a.at?row("정한 날",a.at.slice(0,10)):'')+
+      row("수강 유형",'오프라인 특별관리반')+
+      row("연락처",pend)+row("직렬",pend)+row("오늘 공부시간",pend)+row("최근 접속",pend)+
+      '<div class="g5cf">끌어서 자리 이동 · 누르면 배정 편집</div>'; }
+  document.addEventListener("mouseover",function(e){ if(pd) return; const t=e.target&&e.target.closest&&e.target.closest("[data-card][data-room]"); if(!t){ hideCard(); return; }
+    if(!(window.ccPreview||t.closest("#g5SeatAdm"))) return;
+    if(!card){ card=document.createElement("div"); card.className="g5card"; document.body.appendChild(card); }
+    try{ const c=getComputedStyle(document.body).color, m=/(\d+),\s*(\d+),\s*(\d+)/.exec(c), lightText=m&&(+m[1]+ +m[2]+ +m[3])>380; card.style.background=lightText?"#13233f":"#ffffff"; card.style.color=lightText?"#eef2fa":"#1b2333"; }catch(x){}
+    const h=cardHTML(t.dataset.room,+t.dataset.k); if(!h){ hideCard(); return; } card.innerHTML=h; card.style.display="block";
+    const r=t.getBoundingClientRect(), w=card.offsetWidth, ht=card.offsetHeight; let x=r.right+8, y=r.top; if(x+w>innerWidth-8) x=r.left-w-8; if(y+ht>innerHeight-8) y=innerHeight-ht-8; card.style.left=Math.max(8,x)+"px"; card.style.top=Math.max(8,y)+"px"; });
+  window.addEventListener("scroll",hideCard,true);
   function moveSeat(f,t){ if(f.room===t.room&&f.seat===t.seat) return; const A=asLoad(); A[f.room]=A[f.room]||{}; A[t.room]=A[t.room]||{};
     const a=A[f.room][f.seat], b=A[t.room][t.seat]; if(!a) return;
     A[t.room][t.seat]=Object.assign({},a,{by:"admin",at:new Date().toISOString()}); if(b) A[f.room][f.seat]=Object.assign({},b,{by:"admin",at:new Date().toISOString()}); else delete A[f.room][f.seat];
-    asSave(A); sel=t.seat; aView=t.room; admDraw();
+    asSave(A); sel=t.seat; aView=t.room; admDraw(); try{ view=t.room; drawReal(); }catch(e){}
     toast(b?(a.name+" ↔ "+b.name+" 자리를 맞바꿨습니다 ("+f.room+"반 "+f.seat+"번 ↔ "+t.room+"반 "+t.seat+"번)"):(a.name+" → "+t.room+"반 "+t.seat+"번으로 옮겼습니다")); }
   function admDraw(){
     const p=document.getElementById("g5SeatAdm"); if(!p) return; const A=asLoad(), R=G5_ROOMS[aView]; let h="", k=0;
     for(let r=0;r<R.rows;r++){ for(let c=0;c<R.cols;c++){ if(c===R.aisle) h+='<div></div>'; k++; const a=(A[aView]||{})[k];
-      h+='<div class="g5s'+(a?' as':'')+(sel===k?' sel':'')+(mvFrom&&mvFrom.room===aView&&mvFrom.seat===k?' dg':'')+'" data-k="'+k+'"'+(a?' data-occ="1"':'')+' title="'+aView+'반 '+k+'번'+(a?' · '+esc(a.login)+(a.by==="self"?' · 수강생이 첫 로그인 때 직접 정함':' · 관리자 배정'):'')+'">'+(a?esc(a.name)+(a.by==="self"?'✓':''):k)+'</div>'; } }
+      h+='<div class="g5s'+(a?' as':'')+(sel===k?' sel':'')+(mvFrom&&mvFrom.room===aView&&mvFrom.seat===k?' dg':'')+'" data-k="'+k+'" data-room="'+aView+'"'+(a?' data-occ="1" data-card="1"':' title="'+aView+'반 '+k+'번 · 빈자리"')+'>'+(a?esc(a.name)+(a.by==="self"?'✓':''):k)+'</div>'; } }
     const a=sel?(A[aView]||{})[sel]:null;
     p.innerHTML='<h3>🪑 실강의실 지정석 배정 <span class="ex">임시 배치 · 도면 반영 전</span></h3><div class="sub">실강생은 <b>첫 로그인 때 관리자가 알려 준 자리를 직접 눌러</b> 지정석을 정합니다(✓ 표시) · <b>자리를 옮길 때는 앉은 자리를 원하는 자리로 끌어다 놓으세요</b> (사람이 있는 자리에 놓으면 서로 맞바꿈 · 다른 반 탭 위에 잠시 머물면 그 반으로 넘어감) · 끌기가 불편하면 자리를 누르고 [다른 자리로 옮기기] · 그 뒤 자리를 바꾸거나 미리 정해 줄 때는 여기서 자리를 누르고 아이디·이름을 넣으세요 · 서버 연결 전이라 이 브라우저에만 저장됩니다</div>'+
       '<div class="g5rtabs" style="margin:10px 0 8px">'+Object.keys(G5_ROOMS).map(function(r){ return '<button type="button" class="g5rtab'+(r===aView?' on':'')+'" data-ar="'+r+'">'+r+'반 <small>'+Object.keys(A[r]||{}).filter(function(x){ return A[r][x]; }).length+'석 배정</small></button>'; }).join("")+'</div>'+
@@ -7765,7 +7793,7 @@ body.g5dragging,body.g5dragging *{cursor:grabbing!important;user-select:none}
         if(mvFrom){ const f=mvFrom; mvFrom=null; moveSeat(f,{room:aView,seat:k}); return; }
         sel=k; admDraw(); const i=document.getElementById("g5aId"); if(i&&!b.dataset.occ) i.focus(); };
       /* 끌어서 옮기기 (마우스 · 터치 모두) */
-      if(b.dataset.occ) b.onpointerdown=function(e){ if(e.button>0) return; pd={x:e.clientX,y:e.clientY,from:{room:aView,seat:+b.dataset.k},label:b.textContent,id:e.pointerId}; };
+      if(b.dataset.occ) b.onpointerdown=startDrag;
     });
     p.querySelectorAll("[data-ar]").forEach(function(t){ t.onclick=function(){ aView=t.dataset.ar; sel=null; admDraw(); }; });
     const mv=document.getElementById("g5aMove"); if(mv) mv.onclick=function(){ mvFrom={room:aView,seat:sel}; admDraw(); };
