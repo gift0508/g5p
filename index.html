@@ -7352,7 +7352,11 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
       L.forEach(function(x){ if(x.t==="dan"){ ref[x.subj]=(ref[x.subj]||0)+(x.bought-x.watched); buy[x.subj]=(buy[x.subj]||0)+x.bought; } else { rk[x.t].n++; rk[x.t].amt+=x.keep; } });
       [["sKn_off",rk.off.n],["sKa_off",rk.off.amt],["sKn_on",rk.on.n],["sKa_on",rk.on.amt]].forEach(function(p){ const e=document.getElementById(p[0]); if(e) e.value=p[1]; });
       /* 환불자가 산 목차는 이달 판매 목차에 들어 있어야 함 — 판매 목차가 그보다 적게 적혀 있으면 환불자 구입분까지 올림 → 들은 목차만 매출로 남음 */
-      subjects().forEach(function(sj){ const e=document.getElementById("sSF_"+sj); if(e) e.value=ref[sj]||0; const c=document.getElementById("sSC_"+sj); if(c&&(+c.value||0)<(buy[sj]||0)) c.value=buy[sj]; });
+      /* 자동으로 올린 만큼은 따로 기억해 두었다가, 접수를 지우면 되돌림 */
+      let AU={}; try{ AU=JSON.parse(localStorage.getItem("g5_dan_auto")||"{}")||{}; }catch(e){}
+      subjects().forEach(function(sj){ const e=document.getElementById("sSF_"+sj); if(e) e.value=ref[sj]||0; const c=document.getElementById("sSC_"+sj); if(!c) return;
+        const base=Math.max(0,(+c.value||0)-(+AU[sj]||0)), add=Math.max(0,(buy[sj]||0)-base); c.value=base+add; AU[sj]=add; });
+      try{ localStorage.setItem("g5_dan_auto",JSON.stringify(AU)); }catch(e){}
       read(); if(!quiet) toast("이달 환불 접수 "+L.length+"건 — 정산에 바로 반영했습니다");
     };
   }
