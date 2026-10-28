@@ -1552,7 +1552,7 @@ function openUpgrade(feat){
     <label>2차 응시 경험</label>
     <select id="upExp2"><option>처음</option><option>응시해 봄</option></select>
     <label>특별관리반 과정</label>
-    <select id="upTrack"><option value="1차">1차 특별관리반 · PSAT·헌법 4과목</option><option value="2차" selected>2차 특별관리반 · 논술형 4과목 (직렬 과목 포함)</option><option value="1+2차">1차+2차 특별관리반 · 동차 전 과정</option></select>
+    <select id="upTrack"><option value="1+2차" selected>5급공채 특별관리반 · 1차(PSAT·헌법) + 2차(논술 4과목) 동차</option></select>
     <label>사용할 아이디</label><input id="upId" type="text" placeholder="영문 소문자·숫자 4~12자" maxlength="12" autocapitalize="off" spellcheck="false">
     <div class="uperr" id="uperr"></div>
     <button class="btn gbtn" id="upSend" onclick="submitUpgrade()">특별관리반 신청하기 →</button>
@@ -6947,7 +6947,7 @@ window.g5Btns=function(o,day,a,hasNote){
     try{ const b=JSON.parse(localStorage.getItem(BK)||"null"); if(b&&typeof b==="object"){ Object.keys(b).forEach(function(k){ localStorage.setItem(k,b[k]); }); } }catch(e){}
     document.getElementById("fPw").value=""; if(err) err.textContent="";
     window.ccTester=true; ccUid=null;
-    applyUser({name:"테스터",type:"직장 병행",round:"",exp1:"처음",exp2:"처음",track:"2차",plan:"full",id:"test01",login_id:TID});
+    applyUser({name:"테스터",type:"직장 병행",round:"",exp1:"처음",exp2:"처음",track:"1+2차",plan:"full",id:"test01",login_id:TID});
     try{ ccPlanStart(); }catch(e){}
     toast("시험용 계정으로 들어왔습니다 — 기록은 이 브라우저에만 저장됩니다");
   };
@@ -6958,6 +6958,123 @@ window.g5Btns=function(o,day,a,hasNote){
     return oOut.apply(this,arguments);
   };
   window.logout=logout;
+})();
+</script>
+<!-- ═══ 5급공채 합격 진단 (1차 · 2차) — 가상 강의실 안 두 단추 ═══
+   2차: 과목마다 40점 미만 과락 · 합격선은 해마다 선발인원에 따라 정해지는 상대평가 → 목표 평균은 운영 설정값(예시)
+   1차: PSAT 3영역 40점 미만 과락 · 헌법 60점 이상 통과 · PSAT 합격선도 상대평가 → 목표 평균은 운영 설정값(예시) -->
+<style>
+.g5dx{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.g5dx button{flex:1;min-width:140px;font:inherit;font-size:13px;font-weight:800;padding:9px 12px;border-radius:10px;cursor:pointer;border:1px solid var(--gold,#C9A227);background:rgba(201,162,39,.08);color:var(--gold,#C9A227)}
+.g5dx button:hover{background:rgba(201,162,39,.18)}
+.g5dx button:focus-visible{outline:2px solid var(--gold,#C9A227);outline-offset:2px}
+#g5dModal{position:fixed;inset:0;background:rgba(5,12,26,.62);display:none;align-items:flex-start;justify-content:center;z-index:9000;overflow:auto;padding:40px 14px}
+#g5dModal.on{display:flex}
+#g5dModal .box{background:#fff;color:#1b2433;border-radius:14px;max-width:620px;width:100%;padding:22px 22px 18px;position:relative;text-align:left;font-size:14px;line-height:1.6}
+#g5dModal h3{margin:0 0 4px;font-size:18px;color:#0D1F3C}
+#g5dModal h3 small{font-size:12px;color:#6a7385;font-weight:500;margin-left:6px}
+#g5dModal .x{position:absolute;right:12px;top:10px;border:0;background:transparent;font-size:20px;cursor:pointer;color:#6a7385}
+#g5dModal .rule{background:#f3f6fb;border-radius:10px;padding:9px 12px;font-size:12.5px;color:#3a4a6d;margin:10px 0}
+#g5dModal table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;margin:6px 0}
+#g5dModal th,#g5dModal td{padding:7px 6px;border-bottom:1px solid #e3e7ef;text-align:right}
+#g5dModal th:first-child,#g5dModal td:first-child{text-align:left}
+#g5dModal th{font-size:12px;color:#6a7385;font-weight:500}
+#g5dModal input[type=number]{width:70px;padding:5px 6px;border:1px solid #cfd6e2;border-radius:6px;font:inherit;text-align:right}
+#g5dModal .ok{color:#2f7d4f;font-weight:700}#g5dModal .warn{color:#b8860b;font-weight:700}#g5dModal .bad{color:#c0392b;font-weight:700}
+#g5dModal .sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+#g5dModal .sum div{border:1px solid #e3e7ef;border-radius:10px;padding:8px 10px}
+#g5dModal .sum b{display:block;font-size:20px;color:#0D1F3C}
+#g5dModal .sum span{font-size:11.5px;color:#6a7385}
+#g5dModal .adv{background:#FFF8E6;border:1px solid #F5DFA0;border-radius:10px;padding:9px 12px;color:#5a4410;font-size:13px;margin-top:8px}
+#g5dModal .foot{font-size:11.5px;color:#7a7f8c;margin-top:12px}
+@media(max-width:520px){#g5dModal .sum{grid-template-columns:1fr}}
+</style>
+<div id="g5dModal" role="dialog" aria-modal="true" aria-label="합격 진단"><div class="box" id="g5dBox"></div></div>
+<script>
+(function(){
+  /* 운영 설정값 — 합격선은 해마다 달라지므로 관리자가 바꿀 값 (지금은 예시) */
+  window.G5_PASS={"1차":{avg:75,cut:40,law:60},"2차":{avg:50,cut:40}};
+  const E=function(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); };
+  const M=function(){ return document.getElementById("g5dModal"); };
+  const close=function(){ M().classList.remove("on"); };
+  M().addEventListener("click",function(e){ if(e.target.id==="g5dModal") close(); });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape") close(); });
+  function learn(){ try{ return (JSON.parse(localStorage.getItem("cc_learnlog")||"{}")||{}).s||{}; }catch(e){ return {}; } }
+  function laws2(){
+    let L=["행정법","행정학","경제학"]; try{
+      const p=(ccTrackSaved("2차").path)||{}; (CC_OPT["2차"]||[]).forEach(function(o){ if(p[o]&&p[o]!=="skip") L.push(o); });
+    }catch(e){}
+    return L;
+  }
+  function stat(v,cut,goal){ if(v==null) return '<span class="warn">기록 없음</span>'; if(v<cut) return '<span class="bad">과락 위험</span>'; if(v<goal) return '<span class="warn">목표 미달</span>'; return '<span class="ok">안정</span>'; }
+  function head(t,sub){ return '<button class="x" aria-label="닫기" onclick="document.getElementById(\'g5dModal\').classList.remove(\'on\')">✕</button><h3>'+t+' <small>'+sub+'</small></h3>'; }
+
+  /* ── 2차 합격 진단: 사례형 학습엔진에서 채점받은 답안 점수(100점 환산 평균) ── */
+  window.g5Diag2=function(){
+    const C=G5_PASS["2차"], S=learn(), L=laws2();
+    const rows=L.map(function(l){ const o=S[l]||null, n=o?(o.scn||0):0; return {l:l,n:n,v:n?Math.round((o.sc||0)/n*10)/10:null}; });
+    const has=rows.filter(function(r){ return r.v!=null; });
+    const avg=has.length?Math.round(has.reduce(function(a,r){ return a+r.v; },0)/has.length*10)/10:null;
+    const total=has.length?Math.round(has.reduce(function(a,r){ return a+r.v; },0)):null;
+    let h=head("🎯 2차 합격 진단","5급공채 2차 · "+L.length+"과목 · 각 100점");
+    h+='<div class="rule">과목마다 <b>'+C.cut+'점 미만이면 과락</b> · 합격선은 해마다 선발인원에 따라 정해지는 상대평가입니다 · 이 진단은 목표 평균 <b>'+C.avg+'점</b>(총점 '+C.avg*L.length+'점)을 기준으로 봅니다</div>';
+    if(!has.length){ h+='<div class="adv">아직 채점받은 답안이 없습니다. 과목별 학습엔진에서 주관식(10점 · 50점 · 100점)을 풀면 여기에 과목별 점수가 나옵니다.</div>'; }
+    else{
+      h+='<div class="sum"><div><span>지금 평균</span><b>'+avg+'점</b></div><div><span>지금 총점</span><b>'+total+' / '+(100*has.length)+'</b></div><div><span>목표까지</span><b>'+(avg>=C.avg?'달성':('+'+Math.round((C.avg-avg)*10)/10+'점'))+'</b></div></div>';
+    }
+    h+='<table><thead><tr><th>과목</th><th>채점 답안</th><th>지금 점수</th><th>판정</th></tr></thead><tbody>'+
+      rows.map(function(r){ return '<tr><td>'+E(r.l)+'</td><td>'+r.n+'건</td><td>'+(r.v==null?'—':r.v+'점')+'</td><td>'+stat(r.v,C.cut,C.avg)+'</td></tr>'; }).join("")+'</tbody></table>';
+    const bad=rows.filter(function(r){ return r.v!=null&&r.v<C.cut; }), low=rows.filter(function(r){ return r.v!=null&&r.v>=C.cut&&r.v<C.avg; });
+    if(bad.length) h+='<div class="adv">⚠ <b>'+bad.map(function(r){ return E(r.l); }).join(" · ")+'</b> — 과락선 아래입니다. 한 과목이라도 과락이면 총점과 관계없이 불합격이니, 이 과목의 필수암기 상기와 기초풀이를 먼저 챙기세요.</div>';
+    else if(low.length) h+='<div class="adv">'+low.map(function(r){ return E(r.l); }).join(" · ")+' — 과락은 벗어났지만 목표 평균 아래입니다. 답안작성하기 단계의 50점 문제로 목차와 현출을 다지세요.</div>';
+    h+='<div class="foot">점수는 학습엔진에서 채점받은 답안의 평균으로 계산한 예상치입니다 · 목표 평균은 운영 설정값(예시)이며 해마다 바뀔 수 있습니다.</div>';
+    document.getElementById("g5dBox").innerHTML=h; M().classList.add("on");
+  };
+
+  /* ── 1차 합격 진단: PSAT 3영역 + 헌법 — PSAT 엔진이 없을 동안은 최근 모의고사 점수를 직접 입력 ── */
+  const K1="g5_psat_scores";
+  function get1(){ try{ return JSON.parse(localStorage.getItem(K1)||"{}")||{}; }catch(e){ return {}; } }
+  window.g5Diag1=function(){
+    const C=G5_PASS["1차"], v=get1(), P=["언어논리","자료해석","상황판단"];
+    let h=head("🎯 1차 합격 진단","5급공채 1차 · PSAT 3영역 + 헌법");
+    h+='<div class="rule">1차는 2차를 보기 위한 관문입니다 · PSAT 영역마다 <b>'+C.cut+'점 미만이면 과락</b> · 헌법은 <b>'+C.law+'점 이상이면 통과</b>(합격선 계산에는 넣지 않음) · PSAT 합격선은 상대평가라 목표 평균 <b>'+C.avg+'점</b>(예시)으로 봅니다</div>';
+    h+='<div style="font-size:12.5px;color:#6a7385">최근 모의고사 점수를 넣으면 바로 판정합니다 (PSAT 학습엔진이 붙으면 자동으로 채워집니다)</div>';
+    h+='<table><thead><tr><th>영역</th><th>최근 점수</th><th>판정</th></tr></thead><tbody>'+
+      P.concat(["헌법"]).map(function(k){ const x=v[k]; const st=k==="헌법"?(x==null||x===""?'<span class="warn">기록 없음</span>':(x>=C.law?'<span class="ok">통과</span>':'<span class="bad">미통과</span>')):stat(x===""||x==null?null:+x,C.cut,C.avg);
+        return '<tr><td>'+k+'</td><td><input type="number" min="0" max="100" step="2.5" id="g5p_'+k+'" value="'+(x==null?"":x)+'" aria-label="'+k+' 점수"></td><td>'+st+'</td></tr>'; }).join("")+'</tbody></table>';
+    const got=P.map(function(k){ return v[k]; }).filter(function(x){ return x!==""&&x!=null; }).map(Number);
+    if(got.length===3){
+      const avg=Math.round(got.reduce(function(a,b){ return a+b; },0)/3*10)/10;
+      h+='<div class="sum"><div><span>PSAT 평균</span><b>'+avg+'점</b></div><div><span>목표 평균</span><b>'+C.avg+'점</b></div><div><span>판정</span><b style="font-size:16px">'+(got.some(function(x){ return x<C.cut; })?'과락 위험':(avg>=C.avg?'통과권':'보강 필요'))+'</b></div></div>';
+      h+='<div class="adv">'+(got.some(function(x){ return x<C.cut; })?'과락 영역이 있습니다. 그 영역 문제풀이 비중을 먼저 올리세요.':(avg>=C.avg?'PSAT는 통과권입니다. 하루 학습량에서 PSAT 비중을 줄이고 2차에 시간을 더 쓰세요.':'목표 평균까지 '+Math.round((C.avg-avg)*10)/10+'점 모자랍니다. 1차 시험 전까지 PSAT 비중을 조금 올리세요.'))+'</div>';
+    }
+    h+='<div style="margin-top:10px;text-align:right"><button class="mini" style="font:inherit;font-size:13px;padding:7px 14px;border-radius:8px;border:1px solid #0D1F3C;background:#0D1F3C;color:#fff;cursor:pointer" onclick="g5Save1()">점수 저장하고 다시 판정</button></div>';
+    h+='<div class="foot">목표 평균은 운영 설정값(예시)이며 해마다 바뀔 수 있습니다.</div>';
+    document.getElementById("g5dBox").innerHTML=h; M().classList.add("on");
+  };
+  window.g5Save1=function(){
+    const o={}; ["언어논리","자료해석","상황판단","헌법"].forEach(function(k){ const el=document.getElementById("g5p_"+k); if(el&&el.value!=="") o[k]=Math.max(0,Math.min(100,+el.value)); });
+    try{ localStorage.setItem(K1,JSON.stringify(o)); }catch(e){}
+    g5Diag1();
+  };
+
+  /* 가상 강의실 안에 두 단추 */
+  function mount(){
+    const host=document.querySelector("#homeHero .classroom"); if(!host||document.getElementById("g5dx")) return;
+    const d=document.createElement("div"); d.className="g5dx"; d.id="g5dx";
+    d.innerHTML='<button type="button" onclick="g5Diag1()">🎯 1차 합격 진단 <small style="font-weight:500">PSAT · 헌법</small></button><button type="button" onclick="g5Diag2()">🎯 2차 합격 진단 <small style="font-weight:500">4과목 논술</small></button>';
+    const bar=document.getElementById("stBar"); if(bar) host.insertBefore(d,bar); else host.appendChild(d);
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",mount); else mount();
+  setInterval(mount,2000);
+})();
+</script>
+<script>
+/* 5급공채는 1차·2차를 같은 해에 함께 합격해야 함(유예 없음) → 모든 수강생을 동차(1+2차)로 — 서버에 1차·2차로 저장된 계정도 */
+(function(){
+  const oA=applyUser;
+  applyUser=function(u){ if(u&&typeof u==="object"){ u.track="1+2차"; } return oA.apply(this,arguments); };
+  window.applyUser=applyUser;
 })();
 </script>
 </body>
