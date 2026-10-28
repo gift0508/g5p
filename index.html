@@ -1570,6 +1570,7 @@ function openUpgrade(feat){
     <select id="upTrack"><option value="1+2차" selected>5급공채 특별관리반 · 1차(PSAT·헌법) + 2차(논술 4과목) 동차</option></select>
     <label>${conv?'전환할 관리반':'수강 유형'}</label>
     <select id="upClass" onchange="g5UpType()">${conv?'':'<option value="dan">온라인 단과 · 목차(강의 1강)당 9,000원</option>'}<option value="off">오프라인 특별관리반 · 월 70만원 (실강 + 독서실 · 관리공간)</option><option value="on">온라인 특별관리반 · 월 56만원 (인강)</option></select>
+    ${conv?'':'<label>등록 구분</label><select id="upReg"><option value="new">신규 등록</option><option value="re">재등록 (지난 기수 특별관리반 수강생 · 추가 10% 할인)</option></select>'}
     <label>사용할 아이디</label><input id="upId" type="text" placeholder="영문 소문자·숫자 4~12자" maxlength="12" autocapitalize="off" spellcheck="false">
     <div class="upterms" id="upTermsMgr" role="region" aria-label="특별관리반 환불 규정" tabindex="0">
       <b class="uptt">환불 규정 — 특별관리반</b>
@@ -1583,10 +1584,18 @@ function openUpgrade(feat){
       <p>중도환불 시에는 재생 시간이 <b>50%를 초과한 목차</b>는 수강한 것으로 보아 환불하지 않고, 나머지 목차의 수강료를 <b>목차당 9,000원</b>으로 계산하여 환불하여 드립니다.</p>
       <p>예) 10강을 구입하고 4강을 50% 넘게 재생한 뒤 해지 → 나머지 6강 × 9,000원 = <b>54,000원 환불</b></p>
     </div>
-    <label class="upagree"><input type="checkbox" id="upAgree" onchange="var b=document.getElementById('upSend');if(b)b.disabled=!this.checked;var e=document.getElementById('uperr');if(this.checked&&e)e.textContent=''"> <span>가입하는 <b id="upAgreeWhat" style="color:var(--gold)">특별관리반</b> 환불 규정을 이해하고 동의합니다 <em>(필수)</em></span></label>
+    <label class="upagree"><input type="checkbox" id="upAgree" onchange="g5UpChk()"> <span>가입하는 <b id="upAgreeWhat" style="color:var(--gold)">특별관리반</b> 환불 규정을 이해하고 동의합니다 <em>(필수)</em></span></label>
+    <div class="upterms" id="upPrivBox" role="region" aria-label="개인정보 수집·이용 동의" tabindex="0" style="max-height:170px">
+      <b class="uptt">개인정보 수집 · 이용 안내</b>
+      <table><tr><th>수집 항목</th><td style="text-align:left">성명 · 전화번호 · 아이디 · 수험 정보(수험 유형 · 응시 경험 · 직렬) · 학습 기록(접속 · 공부시간 · 풀이 기록) · 환불 시 환불 계좌(은행 · 계좌번호 · 예금주)</td></tr>
+      <tr><th>이용 목적</th><td style="text-align:left">수강 등록 · 학습 관리와 상담 연락 · 수강료 결제와 환불 처리 · 명예의 전당(이름 가운데를 가려 표시)</td></tr>
+      <tr><th>보유 기간</th><td style="text-align:left">수강 종료 후 1년까지 보관 후 파기 · 결제 · 환불 기록은 관계 법령이 정한 기간 동안 보관</td></tr></table>
+      <p>동의를 거부할 수 있으나, 거부하시면 수강 등록과 관리가 불가능합니다.</p>
+    </div>
+    <label class="upagree"><input type="checkbox" id="upPriv" onchange="g5UpChk()"> <span>개인정보 수집 · 이용에 동의합니다 <em>(필수)</em></span></label>
     <div class="uperr" id="uperr"></div>
     <button class="btn gbtn" id="upSend" onclick="submitUpgrade()" disabled>${conv?'특별관리반 전환 신청하기 →':'가입 신청하기 →'}</button>
-    <div class="upsub" style="margin:12px 0 0;text-align:center">특별관리반 비용은 <b class="upfeat">오프라인 특별관리반 대비 할인가</b>로 산정되며,<br>기수강 <b class="upfeat">단과 수강료 일부가 공제</b>됩니다</div>`;
+    <div class="upsub" style="margin:12px 0 0;text-align:center">특별관리반 비용은 <b class="upfeat">정가 대비 할인가</b>로 산정되며 <b class="upfeat">재등록 시 10% 추가 할인</b>됩니다<br>${conv?'이미 낸 <b class="upfeat">단과 수강료는 관리반 수강료에 산입</b>되고, 모자란 금액만 입금하시면 됩니다':'단과 수강 중 관리반으로 전환하면 낸 단과 수강료가 관리반 수강료에 산입됩니다'}</div>`;
   document.getElementById("upmodal").classList.add("open");
   g5UpType();
 }
@@ -1597,9 +1606,12 @@ function g5UpType(){
   if(a){ a.style.display=user?"none":""; a.classList.toggle("on",dan); a.classList.toggle("dim",!dan); }
   if(b){ b.classList.toggle("on",!dan); b.classList.toggle("dim",dan&&!user); }
   const w=document.getElementById("upAgreeWhat"); if(w) w.textContent=dan?"온라인 단과":"특별관리반";
-  const ag=document.getElementById("upAgree"), sd=document.getElementById("upSend"); if(ag) ag.checked=false; if(sd) sd.disabled=true;
+  const ag=document.getElementById("upAgree"); if(ag) ag.checked=false; g5UpChk();
 }
 window.g5UpType=g5UpType;
+function g5UpChk(){ const a=document.getElementById("upAgree"), p=document.getElementById("upPriv"), b=document.getElementById("upSend"), e=document.getElementById("uperr");
+  const ok=!!(a&&a.checked&&p&&p.checked); if(b) b.disabled=!ok; if(ok&&e) e.textContent=""; }
+window.g5UpChk=g5UpChk;
 function upgDoneView(){
   return `
     <h3>신청이 접수되었습니다</h3>
@@ -1620,6 +1632,7 @@ async function submitUpgrade(){
   if(!nm||!phRaw||!id){ err.textContent="성명·전화번호·아이디를 모두 입력해 주세요."; return; }
   if(!/^01\d{8,9}$/.test(digits)){ err.textContent="휴대전화 번호를 확인해 주세요 (예: 010-1234-5678)"; return; }
   if(!/^[a-z0-9]{4,12}$/.test(id)){ err.textContent="아이디는 영문 소문자·숫자 4~12자로 정해 주세요."; return; }
+  const pv=document.getElementById("upPriv"); if(!pv||!pv.checked){ err.textContent="개인정보 수집 · 이용에 동의해 주세요."; return; }
   const ag=document.getElementById("upAgree"); if(!ag||!ag.checked){ err.textContent="가입하는 클래스의 환불 규정을 읽고 동의칸에 체크해 주세요."; return; }
   if(!sb){ err.textContent=CC.url?"서버 연결 모듈을 불러오지 못했습니다 — 새로고침해 주세요":"5급 서버를 준비하고 있습니다 — 서버가 연결되면 신청서가 접수됩니다 (지금은 화면 점검용)"; return; }
   const phone=digits.length===11?digits.replace(/(\d{3})(\d{4})(\d{4})/,"$1-$2-$3"):digits.replace(/(\d{3})(\d{3})(\d{4})/,"$1-$2-$3");
@@ -1630,7 +1643,7 @@ async function submitUpgrade(){
       exp1:document.getElementById("upExp1").value,exp2:document.getElementById("upExp2").value,
       round:"1차 "+document.getElementById("upExp1").value+" · 2차 "+document.getElementById("upExp2").value,
       track:document.getElementById("upTrack").value,login_id:id,
-      class_type:document.getElementById("upClass").value,refund_agreed_at:new Date().toISOString(),refund_terms_ver:(document.getElementById("upClass").value==="dan"?"dan-":"mgr-")+"2026-10-28"});
+      class_type:document.getElementById("upClass").value,reg_type:((document.getElementById("upReg")||{}).value||"new"),privacy_agreed_at:new Date().toISOString(),refund_agreed_at:new Date().toISOString(),refund_terms_ver:(document.getElementById("upClass").value==="dan"?"dan-":"mgr-")+"2026-10-28"});
     if(r.error) throw r.error;
     upgApplied=true;
     document.getElementById("upBody").innerHTML=upgDoneView();
@@ -6980,17 +6993,21 @@ window.g5Btns=function(o,day,a,hasNote){
    서버를 거치지 않고 이 브라우저 안에서만 수강생으로 들어갑니다 · 기록은 이 브라우저에만 저장되고 로그아웃해도 남습니다
    ⚠ 실제 운영 전에 이 블록을 지울 것 (페이지 소스에 비밀번호가 보임) */
 (function(){
-  const TID="test01", TPW="10041004", BK="g5_tester_backup";
+  const TPW="10041004", BK0="g5_tester_backup";
+  /* 실강생(오프라인 관리반) 시험 계정 3개 — 가상 지정석: test01 A반 5번 · test02 A반 14번 · test03은 첫 로그인 때 직접 자리를 고름 */
+  const TS={test01:"김과장",test02:"이대리",test03:"박주임"}; window.G5_TESTERS=TS;
+  let BK=BK0;
   const oLogin=ccLogin;
   ccLogin=async function(){
     const id=(document.getElementById("fId").value||"").trim().toLowerCase(), pw=document.getElementById("fPw").value||"";
-    if(id!==TID) return oLogin.apply(this,arguments);
+    if(!TS[id]) return oLogin.apply(this,arguments);
+    const TID=id; BK=id==="test01"?BK0:BK0+"_"+id;
     const err=document.getElementById("gerr");
     if(pw!==TPW){ if(err) err.textContent="비밀번호가 맞지 않습니다."; return; }
     try{ const b=JSON.parse(localStorage.getItem(BK)||"null"); if(b&&typeof b==="object"){ Object.keys(b).forEach(function(k){ localStorage.setItem(k,b[k]); }); } }catch(e){}
     document.getElementById("fPw").value=""; if(err) err.textContent="";
     window.ccTester=true; ccUid=null;
-    applyUser({name:"김과장",type:"직장 병행",round:"",exp1:"처음",exp2:"처음",track:"1+2차",plan:"full",id:"test01",login_id:TID});
+    applyUser({name:TS[TID],type:"직장 병행",round:"",exp1:"처음",exp2:"처음",track:"1+2차",plan:"full",id:TID,login_id:TID,cls:"off"});
     try{ ccPlanStart(); }catch(e){}
     toast("시험용 계정으로 들어왔습니다 — 기록은 이 브라우저에만 저장됩니다");
   };
@@ -7229,6 +7246,7 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
     ratio:{off:[4,4,2],on:[5,3,2]},          /* 학원 : 강사 : 운영자 */
     basis:"mix", mix:70,
     list:{off:900000,on:720000},              /* 정가(월) — 환불 일할 기준: 정가 ÷ 30일 (하루라도 이용하면 하루치) */
+    reg:{rate:10,off:0,on:0},                 /* 재등록 추가 할인 % · 이달 인원 중 재등록 인원 */
     rk:{off:{n:0,amt:0},on:{n:0,amt:0}},     /* 이달 중도 해지자: 인원 · 잔액(낸 금액 − 환불액 = 일할 공제액) — 현 이용자 매출에 더해 원래 비율대로 정산 */
     single:{ratio:[7,3], price:{"경제학":9000,"행정법":9000,"행정학":9000,"정치학":9000,"재정학":9000,"교육학":9000}, cnt:{"경제학":0,"행정법":0,"행정학":0,"정치학":0,"재정학":0,"교육학":0}},   /* 온라인 단과 — 목차(강의 1개) 단위 결제 · 학원 : 강사 (관리비·임대료 없음 · 운영자 몫 없음) */
     N:{"일반행정":{off:12,on:30},"인사조직":{off:3,on:8},"재경":{off:6,on:15},"교육행정":{off:2,on:5}},
@@ -7244,6 +7262,21 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
   const prof=function(subj){ try{ return (CC_PROF["2차"]||{})[subj]||"미정"; }catch(e){ return "미정"; } };
   const subjects=function(){ const a=BASE().slice(); J().forEach(function(j){ if(a.indexOf(j[1])<0) a.push(j[1]); }); return a; };
 
+  /* 정산 월(이번 달) · 마감 */
+  const SM=function(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); };
+  const nextM=function(m){ const y=+m.slice(0,4), mo=+m.slice(5,7); return mo===12?(y+1)+"-01":y+"-"+String(mo+1).padStart(2,"0"); };
+  const CLK="g5_settle_closed";
+  function closedMap(){ try{ return JSON.parse(localStorage.getItem(CLK)||"{}")||{}; }catch(e){ return {}; } }
+  function isClosed(m){ return !!closedMap()[m||SM()]; }
+  function entryMonth(){ const m=SM(); return isClosed(m)?nextM(m):m; }   /* 확정된 달 이후 접수는 다음 달 정산으로 */
+  const monthOf=function(x){ return x.sm||String(x.at||"").slice(0,7); };
+  /* 단과 → 관리반 전환 대장 */
+  const VKEY="g5_conv_ledger";
+  function cvLoad(){ try{ const v=JSON.parse(localStorage.getItem(VKEY)||"[]"); return Array.isArray(v)?v:[]; }catch(e){ return []; } }
+  function cvSave(a){ try{ localStorage.setItem(VKEY,JSON.stringify(a)); }catch(e){} }
+  /* 이달 전환자: 지난달 이전에 산 단과분은 이미 단과로 정산됐으므로 관리반 매출에서 그만큼 뺌 · 이번 달에 산 단과분은 단과 매출에서 빼서 관리반 매출로 옮김 */
+  function cvSum(){ const o={adj:{off:0,on:0},cnt:{},n:{off:0,on:0}}; cvLoad().filter(function(x){ return monthOf(x)===SM(); }).forEach(function(x){
+      o.adj[x.t]+=(+x.prevCnt||0)*(+x.price||0); o.cnt[x.subj]=(o.cnt[x.subj]||0)+(+x.nowCnt||0); o.n[x.t]++; }); return o; }
   function calc(){
     const res={}, sum={off:{sales:0,mgmt:0,rent:0,pool:0,acad:0,inst:0,me:0,n:0},on:{sales:0,mgmt:0,rent:0,pool:0,acad:0,inst:0,me:0,n:0}};
     /* 임대료(월 고정비)는 관리반 전체가 함께 부담 — 각 직렬·유형 매출 비중대로 나눠 관리비와 함께 먼저 뺌 */
@@ -7251,19 +7284,22 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
     const typeGross={off:0,on:0}, S0={off:{gross:0,rk:0,rkn:0},on:{gross:0,rk:0,rkn:0}};
     J().forEach(function(j){ ["off","on"].forEach(function(t){ typeGross[t]+=(+((C.N[j[0]]||{})[t]||0))*(+C.fee[t]||0); }); });
     /* 환불자 잔액·인원은 직렬별 매출 비중대로 나눠 붙임 (매출이 없으면 첫 직렬) */
+    const CV=cvSum(), RG=C.reg||{rate:0}, ADJ={off:0,on:0};
+    ["off","on"].forEach(function(t){ ADJ[t]=(+RG[t]||0)*(+C.fee[t]||0)*(+RG.rate||0)/100+CV.adj[t]; });
+    const adjOf=function(t,j,gross){ return ADJ[t]*shr(t,j,gross); };
     const RK=C.rk||{}, shr=function(t,j,gross){ const tg=typeGross[t]||0; return tg?gross/tg:(j[0]===J()[0][0]?1:0); };
     const rkOf=function(t,j,gross){ const k=RK[t]||{}, w=shr(t,j,gross); return {amt:(+k.amt||0)*w, n:(+k.n||0)*w}; };
-    let offBase=0; J().forEach(function(j){ const n=+((C.N[j[0]]||{}).off||0), g=n*(+C.fee.off||0), k=rkOf("off",j,g); offBase+=Math.max(0,g+k.amt-(n+k.n)*(+C.mgmt||0)); });
+    let offBase=0; J().forEach(function(j){ const n=+((C.N[j[0]]||{}).off||0), g=n*(+C.fee.off||0), k=rkOf("off",j,g); offBase+=Math.max(0,g-adjOf("off",j,g)+k.amt-(n+k.n)*(+C.mgmt||0)); });
     const rentAll=+C.rent||0, deficit=offBase<rentAll;   /* 오프라인 인원이 모자라 (매출 − 관리비)가 임대료보다 작으면 오프라인 적자 → 실강분 배분 없음 */
     subjects().forEach(function(s){ res[s]={off:0,on:0,sg:0}; });
     const SG={sales:0,acad:0,inst:0}, sr=(C.single&&C.single.ratio)||[7,3], srs=(+sr[0]||0)+(+sr[1]||0)||1;
-    subjects().forEach(function(s){ const sgc=C.single||{}, v=(+((sgc.price||{})[s]||0))*Math.max(0,(+((sgc.cnt||{})[s]||0))-(+((sgc.ref||{})[s]||0))); SG.sales+=v; SG.acad+=v*(+sr[0]||0)/srs; const i=v*(+sr[1]||0)/srs; SG.inst+=i; res[s].sg=i; });
+    subjects().forEach(function(s){ const sgc=C.single||{}, v=(+((sgc.price||{})[s]||0))*Math.max(0,(+((sgc.cnt||{})[s]||0))-(+((sgc.ref||{})[s]||0))-(+CV.cnt[s]||0)); SG.sales+=v; SG.acad+=v*(+sr[0]||0)/srs; const i=v*(+sr[1]||0)/srs; SG.inst+=i; res[s].sg=i; });
     J().forEach(function(j){
       const subs=BASE().concat([j[1]]);
       ["off","on"].forEach(function(t){
         const n=+((C.N[j[0]]||{})[t]||0), fee=+C.fee[t]||0, R=C.ratio[t], rs=(+R[0]||0)+(+R[1]||0)+(+R[2]||0)||1;
-        const gross=n*fee, k=rkOf(t,j,gross), sales=gross+k.amt, mg=Math.min(sales,(n+k.n)*(+C.mgmt||0)), base=sales-mg, rt=(t==="off"&&offBase)?rentAll*base/offBase:0, pool=(t==="off")?(deficit?0:base-rt):base;
-        S0[t].gross+=gross; S0[t].rk+=k.amt; S0[t].rkn+=k.n;
+        const gross=n*fee, k=rkOf(t,j,gross), ad=adjOf(t,j,gross), sales=Math.max(0,gross-ad+k.amt), mg=Math.min(sales,(n+k.n)*(+C.mgmt||0)), base=sales-mg, rt=(t==="off"&&offBase)?rentAll*base/offBase:0, pool=(t==="off")?(deficit?0:base-rt):base;
+        S0[t].gross+=gross; S0[t].rk+=k.amt; S0[t].rkn+=k.n; S0[t].adj=(S0[t].adj||0)+ad;
         const S=sum[t]; S.n+=n; S.sales+=sales; S.mgmt+=mg; S.rent+=rt; S.pool+=pool;
         S.acad+=pool*(+R[0]||0)/rs; S.me+=pool*(+R[2]||0)/rs; const inst=pool*(+R[1]||0)/rs; S.inst+=inst;
         const cw=subs.map(cat), ct=cw.reduce(function(a,b){ return a+b; },0)||1;
@@ -7274,11 +7310,11 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
         });
       });
     });
-    return {res:res,sum:sum,sg:SG,s0:S0,deficit:deficit,net:offBase-rentAll};
+    return {res:res,sum:sum,sg:SG,s0:S0,cv:CV,adjT:ADJ,deficit:deficit,net:offBase-rentAll};
   }
   function render(){
     const pn=document.getElementById("g5Settle"); if(!pn) return;
-    try{ refundCalc(); refundSingle(); }catch(e){}
+    try{ refundCalc(); refundSingle(); cvCalc(); }catch(e){}
     const R=calc(), S=R.sum, tot=function(k){ return S.off[k]+S.on[k]; }, rkt=R.s0.off.rk+R.s0.on.rk, rkn=Math.round(R.s0.off.rkn+R.s0.on.rkn);
     const body=document.getElementById("g5SetOut");
     body.innerHTML=
@@ -7296,17 +7332,17 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
         '<div class="me"><span>운영자 몫 (관리반만 · 환불 부담 전)</span><b>'+man(tot("me"))+'원</b></div>'+
       '</div>'+
       (R.deficit?'<div style="margin-top:12px;padding:10px 12px;border:1px solid #c0392b;border-radius:10px;color:#c0392b;font-size:.84rem">⚠ 이달 오프라인 인원으로는 (매출 − 관리비)가 임대료 '+won(+C.rent||0)+'원에 못 미칩니다 — <b>오프라인 적자 '+won(-R.net)+'원</b> · 실강분은 나눌 금액이 없습니다 (온라인 관리반 정산은 그대로)</div>':'')+
-      '<div class="scroll" style="margin-top:12px"><table><thead><tr><th>정산 대상 계산</th><th>현 이용자</th><th>이용자 매출</th><th>중도 해지자 잔액</th><th>관리비</th><th>소계</th></tr></thead><tbody>'+
-      '<tr><td>오프라인 관리반</td><td>'+S.off.n+'명</td><td>'+won(R.s0.off.gross)+'</td><td>+ '+won(R.s0.off.rk)+' <small style="color:var(--mute)">'+Math.round(R.s0.off.rkn)+'명</small></td><td>− '+won(S.off.mgmt)+'</td><td>'+won(S.off.sales-S.off.mgmt)+'</td></tr>'+
-      '<tr><td>&nbsp;&nbsp;└ 임대료 (월 고정비 · 오프라인만)</td><td></td><td></td><td></td><td></td><td>− '+won(+C.rent||0)+'</td></tr>'+
-      '<tr><td>&nbsp;&nbsp;= 오프라인 정산 대상</td><td></td><td></td><td></td><td></td><td'+(R.deficit?' style="color:#c0392b"':'')+'>'+(R.deficit?'− '+won(-R.net)+' (적자)':won(S.off.pool))+'</td></tr>'+
-      '<tr><td>온라인 관리반 <small style="color:var(--mute)">· 임대료 없음</small></td><td>'+S.on.n+'명</td><td>'+won(R.s0.on.gross)+'</td><td>+ '+won(R.s0.on.rk)+' <small style="color:var(--mute)">'+Math.round(R.s0.on.rkn)+'명</small></td><td>− '+won(S.on.mgmt)+'</td><td>'+won(S.on.pool)+'</td></tr>'+
+      '<div class="scroll" style="margin-top:12px"><table><thead><tr><th>정산 대상 계산</th><th>현 이용자</th><th>이용자 매출</th><th>재등록 할인 · 전환 산입</th><th>중도 해지자 잔액</th><th>관리비</th><th>소계</th></tr></thead><tbody>'+
+      '<tr><td>오프라인 관리반</td><td>'+S.off.n+'명</td><td>'+won(R.s0.off.gross)+'</td><td>− '+won(R.s0.off.adj||0)+'</td><td>+ '+won(R.s0.off.rk)+' <small style="color:var(--mute)">'+Math.round(R.s0.off.rkn)+'명</small></td><td>− '+won(S.off.mgmt)+'</td><td>'+won(S.off.sales-S.off.mgmt)+'</td></tr>'+
+      '<tr><td>&nbsp;&nbsp;└ 임대료 (월 고정비 · 오프라인만)</td><td></td><td></td><td></td><td></td><td></td><td>− '+won(+C.rent||0)+'</td></tr>'+
+      '<tr><td>&nbsp;&nbsp;= 오프라인 정산 대상</td><td></td><td></td><td></td><td></td><td></td><td'+(R.deficit?' style="color:#c0392b"':'')+'>'+(R.deficit?'− '+won(-R.net)+' (적자)':won(S.off.pool))+'</td></tr>'+
+      '<tr><td>온라인 관리반 <small style="color:var(--mute)">· 임대료 없음</small></td><td>'+S.on.n+'명</td><td>'+won(R.s0.on.gross)+'</td><td>− '+won(R.s0.on.adj||0)+'</td><td>+ '+won(R.s0.on.rk)+' <small style="color:var(--mute)">'+Math.round(R.s0.on.rkn)+'명</small></td><td>− '+won(S.on.mgmt)+'</td><td>'+won(S.on.pool)+'</td></tr>'+
       ''+
-      '<tr class="tot"><td>정산 대상 금액 (배분할 금액)</td><td>'+(S.off.n+S.on.n)+'명</td><td>'+won(R.s0.off.gross+R.s0.on.gross)+'</td><td>+ '+won(rkt)+'</td><td>− '+won(tot("mgmt"))+'</td><td>'+won(tot("pool"))+'</td></tr></tbody></table></div>'+
+      '<tr class="tot"><td>정산 대상 금액 (배분할 금액)</td><td>'+(S.off.n+S.on.n)+'명</td><td>'+won(R.s0.off.gross+R.s0.on.gross)+'</td><td>− '+won((R.s0.off.adj||0)+(R.s0.on.adj||0))+'</td><td>+ '+won(rkt)+'</td><td>− '+won(tot("mgmt"))+'</td><td>'+won(tot("pool"))+'</td></tr></tbody></table></div>'+
       '<div class="scroll" style="margin-top:12px"><table><thead><tr><th>배분</th><th>정산 대상</th><th>학원</th><th>강사</th><th>운영자</th></tr></thead><tbody>'+
       [["off","실강분 (오프라인 "+C.ratio.off.join(":")+")"],["on","인강분 (온라인 "+C.ratio.on.join(":")+")"]].map(function(x){ const s=S[x[0]];
         return '<tr><td>'+x[1]+'</td><td>'+won(s.pool)+'</td><td>'+won(s.acad)+'</td><td>'+won(s.inst)+'</td><td>'+won(s.me)+'</td></tr>'; }).join("")+
-      '<tr><td>온라인 단과 (학원 '+((C.single||{}).ratio||[7,3]).join(" : 강사 ")+' · 관리비·임대료 없음)'+(function(){ const f=(C.single||{}).ref||{}, n=Object.keys(f).reduce(function(a,k){ return a+(+f[k]||0); },0); return n?' <small style="color:var(--mute)">· 환불 목차 '+n+'강 뺌</small>':''; })()+'</td><td>'+won(R.sg.sales)+'</td><td>'+won(R.sg.acad)+'</td><td>'+won(R.sg.inst)+'</td><td>—</td></tr>'+
+      '<tr><td>온라인 단과 (학원 '+((C.single||{}).ratio||[7,3]).join(" : 강사 ")+' · 관리비·임대료 없음)'+(function(){ const f=(C.single||{}).ref||{}, n=Object.keys(f).reduce(function(a,k){ return a+(+f[k]||0); },0); const cvn=Object.keys(R.cv.cnt).reduce(function(a,k){ return a+(+R.cv.cnt[k]||0); },0); return (n?' <small style="color:var(--mute)">· 환불 목차 '+n+'강 뺌</small>':'')+(cvn?' <small style="color:var(--mute)">· 관리반 전환 산입 '+cvn+'강 뺌</small>':''); })()+'</td><td>'+won(R.sg.sales)+'</td><td>'+won(R.sg.acad)+'</td><td>'+won(R.sg.inst)+'</td><td>—</td></tr>'+
       '<tr class="tot"><td>합계</td><td>'+won(tot("pool")+R.sg.sales)+'</td><td>'+won(tot("acad")+R.sg.acad)+'</td><td>'+won(tot("inst")+R.sg.inst)+'</td><td>'+won(tot("me"))+'</td></tr></tbody></table></div>'+
 '<h4 style="margin:16px 0 6px;font-size:.88rem">강사별 지급액 — '+({cat:"카탈로그 비중",act:"실제 수강 비중",mix:"혼합 "+C.mix+":"+(100-C.mix)}[C.basis])+'</h4>'+
       '<div class="scroll"><table><thead><tr><th>과목</th><th>강사</th><th>받는 직렬</th><th>실강분</th><th>인강분</th><th>단과분</th><th>합계</th></tr></thead><tbody>'+
@@ -7338,17 +7374,24 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
   }
   function refundSingle(){}
   const TN={off:"오프라인 관리반",on:"온라인 관리반",dan:"온라인 단과"};
+  const WHY=["진도 · 학습 부담","시간 부족 (직장 · 개인 사정)","경제 사정","건강","다른 학원 · 강의로 이동","합격 · 시험 포기","기타"];
+  /* 교습 시작일 ~ 해지 신청일 → 이용일수 (두 날 모두 포함) · 해지일이 시작일보다 앞이면 시작 전 해지(0일) */
+  function rfDates(){ const a=gv("rfStart"), b=gv("rfEnd"); if(!a||!b) return; const d=Math.round((new Date(b)-new Date(a))/864e5)+1; const e=document.getElementById("rfDays"); if(e) e.value=Math.max(0,d); refundCalc(); }
   function ldRender(){
     const box=document.getElementById("rfLedger"); if(!box) return;
-    const L=ldLoad(), ym=new Date().toISOString().slice(0,7);
-    box.innerHTML=L.length?'<div class="scroll"><table><thead><tr><th>접수일</th><th>유형</th><th>신청자</th><th>연락처</th><th>환불 계좌</th><th>환불액</th><th>잔액(정산)</th><th>상태</th><th></th></tr></thead><tbody>'+
-      L.map(function(x,i){ return '<tr'+(x.at.slice(0,7)===ym?'':' style="opacity:.6"')+'><td>'+x.at.slice(5,10).replace("-","/")+'</td><td>'+TN[x.t]+(x.t==="dan"?' <small style="color:var(--mute)">'+esc(x.subj||"")+'</small>':'')+'</td><td>'+esc(x.name)+'</td><td>'+esc(x.phone)+'</td><td>'+esc(x.bank)+' '+esc(x.acct)+' <small style="color:var(--mute)">('+esc(x.holder)+')</small></td><td><b>'+won(x.back)+'</b></td><td>'+won(x.keep)+'</td>'+
+    const L=ldLoad(), ym=SM();
+    box.innerHTML=L.length?'<div class="scroll"><table><thead><tr><th>접수일</th><th>유형</th><th>신청자</th><th>연락처</th><th>환불 계좌</th><th>사유</th><th>환불액</th><th>잔액(정산)</th><th>상태</th><th></th></tr></thead><tbody>'+
+      L.map(function(x,i){ return '<tr'+(monthOf(x)===ym?'':' style="opacity:.6"')+' title="'+monthOf(x)+' 정산"><td>'+x.at.slice(5,10).replace("-","/")+'</td><td>'+TN[x.t]+(x.t==="dan"?' <small style="color:var(--mute)">'+esc(x.subj||"")+'</small>':'')+'</td><td>'+esc(x.name)+'</td><td>'+esc(x.phone)+'</td><td>'+esc(x.bank)+' '+esc(x.acct)+' <small style="color:var(--mute)">('+esc(x.holder)+')</small></td><td>'+esc(x.why||"—")+'</td><td><b>'+won(x.back)+'</b></td><td>'+won(x.keep)+'</td>'+
         '<td><button type="button" class="mini" data-ldst="'+i+'" style="'+(x.done?'border-color:#5ec98f;color:#5ec98f':'border-color:#e5be44;color:#e5be44')+'">'+(x.done?'지급 완료':'접수 · 지급 대기')+'</button></td><td><button type="button" class="mini" data-lddel="'+i+'">삭제</button></td></tr>'; }).join("")+
-      '</tbody></table></div><div style="font-size:.74rem;color:var(--mute);margin-top:6px">✔ 접수·삭제하면 이달 접수분이 <b>바로 정산에 반영</b>됩니다 (관리반 → 중도 해지자 칸 · 단과 → 판매·환불 목차)</div>':'<div style="font-size:.8rem;color:var(--mute)">접수된 환불이 없습니다</div>';
+      '</tbody></table></div><div style="font-size:.74rem;color:var(--mute);margin-top:6px">✔ 접수·삭제하면 이달 접수분이 <b>바로 정산에 반영</b>됩니다 (관리반 → 중도 해지자 칸 · 단과 → 판매·환불 목차)'+(isClosed()?' · <b style="color:#e5be44">이번 달 정산이 확정돼, 새 접수는 다음 달 정산으로 들어갑니다</b>':'')+'</div>'+
+      (function(){ const M=L.filter(function(x){ return monthOf(x)===ym; }), c={}; M.forEach(function(x){ const w=x.why||"기타"; c[w]=(c[w]||0)+1; }); const k=Object.keys(c).sort(function(a,b){ return c[b]-c[a]; });
+        return k.length?'<div style="font-size:.78rem;margin-top:6px">이달 해지 사유 — '+k.map(function(w){ return w+' <b>'+c[w]+'</b>건'; }).join(' · ')+'</div>':''; })():'<div style="font-size:.8rem;color:var(--mute)">접수된 환불이 없습니다</div>';
     box.querySelectorAll("[data-ldst]").forEach(function(b){ b.onclick=function(){ const L=ldLoad(), x=L[+b.dataset.ldst]; x.done=!x.done; x.paidAt=x.done?new Date().toISOString():null; ldSave(L); ldRender(); }; });
     box.querySelectorAll("[data-lddel]").forEach(function(b){ b.onclick=function(){ const L=ldLoad(); if(!confirmDel(L[+b.dataset.lddel])) return; L.splice(+b.dataset.lddel,1); ldSave(L); ldRender(); g5LdApply(true); }; });
     window.g5LdApply=function(quiet){
-      const L=ldLoad().filter(function(x){ return x.at.slice(0,7)===ym; }), rk={off:{n:0,amt:0},on:{n:0,amt:0}}, ref={}, buy={};
+      if(isClosed()){ render(); return; }
+      const L=ldLoad().filter(function(x){ return monthOf(x)===ym; }), rk={off:{n:0,amt:0},on:{n:0,amt:0}}, ref={}, buy={};
+      cvLoad().filter(function(x){ return monthOf(x)===ym; }).forEach(function(x){ buy[x.subj]=(buy[x.subj]||0)+(+x.nowCnt||0); });
       L.forEach(function(x){ if(x.t==="dan"){ ref[x.subj]=(ref[x.subj]||0)+(x.bought-x.watched); buy[x.subj]=(buy[x.subj]||0)+x.bought; } else { rk[x.t].n++; rk[x.t].amt+=x.keep; } });
       [["sKn_off",rk.off.n],["sKa_off",rk.off.amt],["sKn_on",rk.on.n],["sKa_on",rk.on.amt]].forEach(function(p){ const e=document.getElementById(p[0]); if(e) e.value=p[1]; });
       /* 환불자가 산 목차는 이달 판매 목차에 들어 있어야 함 — 판매 목차가 그보다 적게 적혀 있으면 환불자 구입분까지 올림 → 들은 목차만 매출로 남음 */
@@ -7365,14 +7408,67 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
     const err=document.getElementById("rfErr"), r=rfCompute(), f={name:gv("rfNm").trim(),phone:gv("rfPh").trim(),bank:gv("rfBk").trim(),acct:gv("rfAc").trim(),holder:gv("rfHd").trim()};
     if(!f.name||!f.phone||!f.bank||!f.acct||!f.holder){ err.textContent="신청자 · 연락처 · 은행 · 계좌번호 · 예금주를 모두 넣어 주세요."; return; }
     if(r.t==="dan"?!r.bought:!r.paid){ err.textContent=r.t==="dan"?"결제 목차 수를 넣어 주세요.":"낸 금액을 넣어 주세요."; return; }
-    err.textContent=""; const L=ldLoad(); L.unshift(Object.assign({at:new Date().toISOString(),done:false},f,r,{txt:undefined})); ldSave(L);
-    ["rfNm","rfPh","rfBk","rfAc","rfHd"].forEach(function(id){ const e=document.getElementById(id); if(e) e.value=""; });
+    err.textContent=""; const L=ldLoad(); L.unshift(Object.assign({at:new Date().toISOString(),sm:entryMonth(),done:false,why:gv("rfWhy"),start:gv("rfStart"),end:gv("rfEnd")},f,r,{txt:undefined})); ldSave(L);
+    ["rfNm","rfPh","rfBk","rfAc","rfHd","rfStart","rfEnd"].forEach(function(id){ const e=document.getElementById(id); if(e) e.value=""; });
     ldRender(); g5LdApply(true); toast(f.name+"님 환불 "+won(r.back)+"원 접수 · 정산에 반영");
   }
   window.g5RefundCalc=refundCalc;
+  function cvCompute(){ const t=gv("cvT")||"off", now=gn("cvNow"), prev=gn("cvPrev"), p=gn("cvP"), credit=(now+prev)*p, fee=+C.fee[t]||0;
+    return {t:t,subj:gv("cvSj"),nowCnt:now,prevCnt:prev,price:p,credit:credit,fee:fee,pay:Math.max(0,fee-credit),over:Math.max(0,credit-fee)}; }
+  function cvCalc(){ const o=document.getElementById("cvOut"); if(!o) return; const r=cvCompute();
+    o.innerHTML=(r.nowCnt+r.prevCnt)?('관리반 수강료 '+won(r.fee)+'원 − 단과 산입 '+(r.nowCnt+r.prevCnt)+'강 × '+won(r.price)+'원 = '+won(r.credit)+'원 → <b>'+won(r.pay)+'원 입금</b>'+(r.over?' · <b style="color:#e5be44">산입분이 '+won(r.over)+'원 더 많음 (다음 달 수강료에서 처리할지 확인)</b>':'')):'산 목차 수를 넣으면 계산합니다';
+    const a=document.getElementById("cvAmt"); if(a) a.textContent=won(r.pay)+"원"; }
+  function cvRender(){
+    const box=document.getElementById("cvLedger"); if(!box) return; const L=cvLoad(), ym=SM();
+    box.innerHTML=L.length?'<div class="scroll"><table><thead><tr><th>등록일</th><th>전환</th><th>전환자</th><th>연락처</th><th>단과 산입</th><th>산입액</th><th>입금액</th><th></th></tr></thead><tbody>'+
+      L.map(function(x,i){ return '<tr'+(monthOf(x)===ym?'':' style="opacity:.6"')+' title="'+monthOf(x)+' 정산"><td>'+x.at.slice(5,10).replace("-","/")+'</td><td>'+TN[x.t]+'</td><td>'+esc(x.name)+'</td><td>'+esc(x.phone)+'</td><td>'+esc(x.subj)+' 이번 달 '+x.nowCnt+'강 · 이전 '+x.prevCnt+'강</td><td>'+won(x.credit)+'</td><td><b>'+won(x.pay)+'</b></td><td><button type="button" class="mini" data-cvdel="'+i+'">삭제</button></td></tr>'; }).join("")+
+      '</tbody></table></div><div style="font-size:.74rem;color:var(--mute);margin-top:6px">✔ 정산 반영: 이번 달에 산 단과분은 단과 매출에서 빠져 관리반 매출로 옮겨지고, 지난달 이전에 산 단과분(이미 단과로 정산됨)은 관리반 매출에서 그만큼 뺍니다</div>':'<div style="font-size:.8rem;color:var(--mute)">이달 전환자가 없습니다</div>';
+    box.querySelectorAll("[data-cvdel]").forEach(function(b){ b.onclick=function(){ const L=cvLoad(); L.splice(+b.dataset.cvdel,1); cvSave(L); cvRender(); g5LdApply(true); }; });
+  }
+  function cvAdd(){
+    const err=document.getElementById("cvErr"), r=cvCompute(), f={name:gv("cvNm").trim(),phone:gv("cvPh").trim()};
+    if(!f.name||!f.phone){ err.textContent="전환자 이름과 연락처를 넣어 주세요."; return; }
+    if(!(r.nowCnt+r.prevCnt)){ err.textContent="산 단과 목차 수를 넣어 주세요."; return; }
+    err.textContent=""; const L=cvLoad(); L.unshift(Object.assign({at:new Date().toISOString(),sm:entryMonth()},f,r)); cvSave(L);
+    ["cvNm","cvPh"].forEach(function(id){ const e=document.getElementById(id); if(e) e.value=""; });
+    cvRender(); g5LdApply(true); toast(f.name+"님 관리반 전환 · 입금할 금액 "+won(r.pay)+"원");
+  }
+  /* 월 정산 확정 — 확정하면 입력이 잠기고, 그 뒤 접수는 다음 달 정산으로 */
+  function closeBar(){
+    const b=document.getElementById("g5CloseBar"); if(!b) return; const m=SM(), c=closedMap()[m];
+    b.innerHTML='<b style="font-size:.95rem">'+(+m.slice(0,4))+'년 '+(+m.slice(5,7))+'월 정산</b>'+
+      (c?'<span style="color:#5ec98f;font-weight:800">✔ 확정됨 · '+c.at.slice(0,16).replace("T"," ")+'</span>':'<span style="color:var(--mute)">작성 중 — 확정하면 숫자가 잠깁니다</span>')+
+      '<span style="margin-left:auto;display:flex;gap:6px">'+
+      '<button type="button" class="mini" id="g5Print">🖨 강사별 정산 명세서</button>'+
+      (c?'<button type="button" class="mini" id="g5Reopen">확정 풀기</button>':'<button type="button" class="mini" id="g5Close" style="border-color:var(--gold);color:var(--gold);font-weight:800">이달 정산 확정</button>')+'</span>';
+    const p=document.getElementById("g5Print"); if(p) p.onclick=printStatements;
+    const cl=document.getElementById("g5Close"); if(cl) cl.onclick=function(){ const M=closedMap(); M[m]={at:new Date(Date.now()+9*36e5).toISOString(),C:JSON.parse(JSON.stringify(C))}; try{ localStorage.setItem(CLK,JSON.stringify(M)); }catch(e){} lockInputs(); closeBar(); ldRender(); toast(m+" 정산을 확정했습니다 — 이후 접수는 다음 달 정산으로 들어갑니다"); };
+    const ro=document.getElementById("g5Reopen"); if(ro) ro.onclick=function(){ const M=closedMap(); delete M[m]; try{ localStorage.setItem(CLK,JSON.stringify(M)); }catch(e){} lockInputs(); closeBar(); ldRender(); toast("확정을 풀었습니다 — 다시 고칠 수 있습니다"); };
+  }
+  function lockInputs(){ const pn=document.getElementById("g5Settle"); if(!pn) return; const lk=isClosed();
+    pn.querySelectorAll(".sgrid > .sbox").forEach(function(bx){ if(bx.querySelector("#rfT")||bx.querySelector("#cvT")) return; bx.querySelectorAll("input,select").forEach(function(el){ el.disabled=lk; }); bx.style.opacity=lk?".7":""; }); }
+  /* 강사별 정산 명세서 — 과목마다 한 장 · 인쇄 창에서 PDF로 저장 */
+  function printStatements(){
+    const R=calc(), m=SM(), S=R.sum, sr=(C.single||{}).ratio||[7,3], bas={cat:"카탈로그 비중(강의 수)",act:"실제 수강 비중",mix:"혼합 (카탈로그 "+C.mix+" : 실제 "+(100-C.mix)+")"}[C.basis];
+    const pages=subjects().map(function(s){ const r=R.res[s], sg=C.single||{}, sold=+((sg.cnt||{})[s]||0), rf=+((sg.ref||{})[s]||0), cv=+(R.cv.cnt[s]||0), pr=+((sg.price||{})[s]||0);
+      const who=BASE().indexOf(s)>=0?"전 직렬 공통":J().filter(function(j){ return j[1]===s; }).map(function(j){ return j[0]; }).join(" · ")+" 직렬";
+      return '<section><h1>'+(+m.slice(0,4))+'년 '+(+m.slice(5,7))+'월 강사 수강료 정산 명세서</h1><div class="meta"><b>'+prof(s)+'</b> 강사 · '+s+' ('+who+')'+(isClosed()?' · 확정 정산':' · <span class="dr">확정 전 (가정산)</span>')+'</div>'+
+        '<table><tr><th>구분</th><th>계산 근거</th><th class="n">금액(원)</th></tr>'+
+        '<tr><td>실강분</td><td>오프라인 관리반 정산 대상 '+won(S.off.pool)+'원 × 강사 몫 '+C.ratio.off[1]+'/'+(C.ratio.off[0]+C.ratio.off[1]+C.ratio.off[2])+' → 과목 배분 ('+bas+')</td><td class="n">'+won(r.off)+'</td></tr>'+
+        '<tr><td>인강분</td><td>온라인 관리반 정산 대상 '+won(S.on.pool)+'원 × 강사 몫 '+C.ratio.on[1]+'/'+(C.ratio.on[0]+C.ratio.on[1]+C.ratio.on[2])+' → 과목 배분 ('+bas+')</td><td class="n">'+won(r.on)+'</td></tr>'+
+        '<tr><td>단과분</td><td>목차당 '+won(pr)+'원 × (판매 '+sold+'강 − 환불 '+rf+'강'+(cv?' − 관리반 전환 '+cv+'강':'')+') × 강사 몫 '+sr[1]+'/'+(sr[0]+sr[1])+'</td><td class="n">'+won(r.sg)+'</td></tr>'+
+        '<tr class="t"><td>합계</td><td></td><td class="n">'+won(r.off+r.on+r.sg)+'</td></tr></table>'+
+        '<p class="ft">· 관리반 정산 대상 = 이용자 매출 − 재등록 할인 · 전환 산입 + 중도 해지자 잔액 − 관리비(1인 '+won(C.mgmt)+'원)'+' − 임대료(오프라인 월 '+won(+C.rent||0)+'원)<br>· 중도 해지자는 일할 공제 후 남은 잔액이 원래 비율대로 정산되었습니다 · 온라인 단과는 재생 50%를 넘긴 목차만 정산되었습니다</p>'+
+        '<div class="sign"><span>발행: 학원 · 5급공채특별관리반</span><span>확인: ____________ (인)</span></div></section>'; }).join("");
+    const w=window.open("","_blank"); if(!w){ toast("팝업이 막혀 있습니다 — 이 사이트의 팝업을 허용해 주세요"); return; }
+    w.document.write('<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>'+m+' 강사 정산 명세서</title><style>body{font-family:"Pretendard","Noto Sans KR",sans-serif;color:#1b2333;margin:0;padding:24px;background:#fff}section{max-width:760px;margin:0 auto 40px;page-break-after:always}h1{font-size:20px;margin:0 0 6px}.meta{color:#555;margin-bottom:14px}.dr{color:#b8860b;font-weight:700}table{width:100%;border-collapse:collapse;font-size:14px}th,td{border:1px solid #ccc;padding:8px 10px;text-align:left;vertical-align:top}th{background:#f5f2ea}.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}td:first-child{white-space:nowrap}.t td{font-weight:800;background:#faf7ef}.ft{font-size:12px;color:#666;line-height:1.6;margin-top:10px}.sign{display:flex;justify-content:space-between;margin-top:28px;font-size:13px}.bar{max-width:760px;margin:0 auto 16px;text-align:right}@media print{.bar{display:none}body{padding:0}}</style></head><body><div class="bar"><button onclick="print()" style="font:inherit;padding:8px 16px;font-weight:700;cursor:pointer">🖨 인쇄 · PDF로 저장</button></div>'+pages+'</body></html>');
+    w.document.close();
+  }
+  window.g5PrintStatements=printStatements;
   function inputs(){
     const n=function(id,v,step){ return '<input type="number" id="'+id+'" value="'+v+'" min="0" step="'+(step||1)+'">'; };
     let h='<h3>💰 강사 수강료 정산 <span class="ex">예시값 · 모의 정산</span></h3>'+
+      '<div id="g5CloseBar" class="srow" style="flex-wrap:wrap;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin:8px 0"></div>'+
       '<div class="sub"><b>관리비(수강생 1인당)</b>를 먼저 떼고 <b>오프라인은 임대료(월 고정비)</b>도 뗀 뒤, 남은 금액을 실강·인강별로 <b>학원 : 강사 : 운영자</b> 비율로 나눕니다 · 강사 몫은 그 직렬 과목 강사에게 배분합니다 · 서버 연결 전이라 인원·시간을 직접 넣어 계산합니다</div>'+
       '<div class="sgrid">'+
       '<div class="sbox"><h4>수강료 · 관리비</h4>'+
@@ -7383,6 +7479,7 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
         '<div class="srow">온라인 정가 (월 · 환불 일할 기준)'+n("sL_on",(C.list||{}).on||720000,10000)+'</div>'+
         '<div class="srow">중도 해지자 — 오프라인 <small style="color:var(--mute)">인원 · 잔액(일할 공제액)</small><span>'+n("sKn_off",((C.rk||{}).off||{}).n||0)+'명 '+n("sKa_off",((C.rk||{}).off||{}).amt||0,10000)+'원</span></div>'+
         '<div class="srow">중도 해지자 — 온라인 <small style="color:var(--mute)">인원 · 잔액(일할 공제액)</small><span>'+n("sKn_on",((C.rk||{}).on||{}).n||0)+'명 '+n("sKa_on",((C.rk||{}).on||{}).amt||0,10000)+'원</span></div>'+
+        '<div class="srow">재등록 추가 할인 %<small style="color:var(--mute)">· 이달 인원 중 재등록</small><span>'+n("sRgR",(C.reg||{}).rate==null?10:C.reg.rate)+'% 오프 '+n("sRg_off",(C.reg||{}).off||0)+' 온 '+n("sRg_on",(C.reg||{}).on||0)+'</span></div>'+
         '<div class="srow">임대료 (월 고정비 · 오프라인만 공제)'+n("sRent",C.rent==null?0:C.rent,100000)+'</div></div>'+
       '<div class="sbox ratio"><h4>배분 비율 — 학원 : 강사 : 운영자</h4>'+
         '<div class="srow">실강 (오프라인)<span>'+n("sR_off0",C.ratio.off[0])+' : '+n("sR_off1",C.ratio.off[1])+' : '+n("sR_off2",C.ratio.off[2])+'</span></div>'+
@@ -7403,7 +7500,9 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
         '<div style="font-size:.74rem;color:var(--mute);margin:0 0 6px">① 수강 유형과 금액(단과는 목차)을 넣으면 환불액이 바로 계산됩니다</div>'+
         '<div class="srow">수강 유형<select id="rfT"><option value="off">오프라인 관리반</option><option value="on">온라인 관리반</option><option value="dan">온라인 단과</option></select></div>'+
         '<div class="srow rfMgr">낸 금액 (이번 달)'+n("rfPaid",C.fee.off,10000)+'</div>'+
-        '<div class="srow rfMgr">이용 일수 (하루라도 이용하면 1일)'+n("rfDays",0)+'</div>'+
+        '<div class="srow rfMgr">교습 시작일<input type="date" id="rfStart" style="width:150px"></div>'+
+        '<div class="srow rfMgr">해지 신청일<input type="date" id="rfEnd" style="width:150px"></div>'+
+        '<div class="srow rfMgr">이용 일수 <small style="color:var(--mute)">· 두 날짜를 넣으면 자동 (하루라도 이용하면 1일)</small>'+n("rfDays",0)+'</div>'+
         '<div class="srow rfDan" style="display:none">과목<select id="rfSj">'+subjects().map(function(sj){ return '<option>'+sj+'</option>'; }).join("")+'</select></div>'+
         '<div class="srow rfDan" style="display:none">결제 목차'+n("rfSb",0)+'</div>'+
         '<div class="srow rfDan" style="display:none">들은 목차 (재생 50% 초과)'+n("rfSw",0)+'</div>'+
@@ -7412,6 +7511,7 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
         '<div class="srow" style="font-size:1rem;font-weight:900">환불액<b id="rfAmt" style="color:var(--gold)">0원</b></div>'+
         '</div><div class="rfWho">'+
         '<div class="rfStep">② 환불받을 분의 정보를 넣고 <b>[환불 접수 등록]</b>을 누르면 아래 접수 대장에 올라갑니다</div>'+
+        '<div class="srow">해지 사유<select id="rfWhy" style="width:100%;text-align:left">'+WHY.map(function(w){ return '<option>'+w+'</option>'; }).join("")+'</select></div>'+
         '<div class="srow">환불 신청자<input type="text" id="rfNm" placeholder="이름" maxlength="20"></div>'+
         '<div class="srow">연락처<input type="tel" id="rfPh" placeholder="010-0000-0000" maxlength="13"></div>'+
         '<div class="srow">환불 계좌 — 은행<input type="text" id="rfBk" placeholder="예: 국민" maxlength="20"></div>'+
@@ -7422,6 +7522,24 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
         '</div></div>'+
         '<h4 style="margin:14px 0 6px">환불 접수 대장</h4><div id="rfLedger"></div>'+
         '<div style="font-size:.72rem;color:var(--mute);line-height:1.6;margin-top:6px">관리반: 교습 시작 전 해지는 전액 환불 · 시작 후에는 <b>정가(월) ÷ 30일</b>(오프라인 30,000원 · 온라인 24,000원)을 이용일수만큼 빼고 환불 · 남은 <b>잔액은 현 이용자 매출에 더해</b> 관리비(·오프라인은 임대료)를 떼고 원래 비율로 정산 · 온라인 단과: <b>재생 50%를 넘긴 목차</b>는 들은 것으로 보고 나머지 목차만 목차 가격으로 환불 · 계좌 정보는 지금 이 브라우저에만 저장되며, 서버 연결 후 관리자만 볼 수 있는 곳으로 옮깁니다</div></div>'+
+      '<div class="sbox" style="grid-column:1/-1"><h4>🔁 단과 → 특별관리반 전환 (기수강분 산입)</h4>'+
+        '<div class="sgrid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:4px 18px"><div>'+
+        '<div style="font-size:.74rem;color:var(--mute);margin:0 0 6px">이미 낸 단과 수강료를 관리반 첫 달 수강료에 넣고, 모자란 금액만 입금받습니다</div>'+
+        '<div class="srow">전환할 관리반<select id="cvT"><option value="off">오프라인 특별관리반</option><option value="on">온라인 특별관리반</option></select></div>'+
+        '<div class="srow">단과 과목<select id="cvSj">'+subjects().map(function(sj){ return '<option>'+sj+'</option>'; }).join("")+'</select></div>'+
+        '<div class="srow">이번 달에 산 목차'+n("cvNow",0)+'</div>'+
+        '<div class="srow">지난달 이전에 산 목차'+n("cvPrev",0)+'</div>'+
+        '<div class="srow">목차당 가격'+n("cvP",9000,500)+'</div>'+
+        '<div class="srow" style="font-size:.86rem;background:rgba(232,185,60,.08);border-radius:8px;padding:8px 10px;margin-top:6px"><span id="cvOut" style="white-space:normal;display:block;line-height:1.55"></span></div>'+
+        '<div class="srow" style="font-size:1rem;font-weight:900">입금할 금액<b id="cvAmt" style="color:var(--gold)">0원</b></div>'+
+        '</div><div class="rfWho">'+
+        '<div class="rfStep">전환자 정보를 넣고 <b>[전환 등록]</b> — 전환자는 위 <b>직렬별 인원</b>에도 1명 넣어 주세요 (수강료 전액으로 잡고, 산입분을 여기서 조정합니다)</div>'+
+        '<div class="srow">전환자<input type="text" id="cvNm" placeholder="이름" maxlength="20"></div>'+
+        '<div class="srow">연락처<input type="tel" id="cvPh" placeholder="010-0000-0000" maxlength="13"></div>'+
+        '<div class="gerr" id="cvErr" style="color:#c0392b;font-size:.78rem;min-height:16px"></div>'+
+        '<button type="button" class="mini" id="cvAdd" style="width:100%;padding:9px;border-color:var(--gold);background:rgba(232,185,60,.12);color:var(--gold);font-weight:800">전환 등록 →</button>'+
+        '</div></div>'+
+        '<h4 style="margin:14px 0 6px">전환 대장</h4><div id="cvLedger"></div></div>'+
       '</div><div id="g5SetOut"></div>'+
       '<div class="note">· 오프라인 관리반은 인강을 무료로 열지만 강사 수강료는 실강 기준으로만 나눕니다 · 온라인 관리반은 인강 기준입니다<br>· 1차(PSAT·헌법) 강의가 아직 없어 1차 강사 몫은 0으로 계산됩니다 — 강의가 들어오면 함께 배분됩니다<br>· 재등록 환불은 재등록한 달의 매출에서 빼서 처리합니다 · 장학 응시권은 수강료 정산에 영향이 없습니다<br>· 임대료는 독서실·관리공간을 쓰는 오프라인 관리반에서만 뺍니다 · 온라인 관리반은 관리비만 뺍니다<br>· 온라인 단과는 목차(강의 1강) 단위로 결제합니다 — 단과 매출 = 목차당 가격 × 판매 목차 수 · 지금은 목차당 9,000원(회당 27,000원 ÷ 3강)으로 계산하며, 목차 중요도에 따른 가격 차등은 나중에 정합니다 · 관리비·임대료 없이 학원 7 : 강사 3으로 나누고, 판 과목 강사에게 바로 돌아갑니다 · 오프라인 단과는 없습니다<br>· 관리반 수강료 근거: 오프라인 실강 단과 회당 27,000원 × 19회 ≈ 51만원 + 관리 투입 비용(관리 인력·독서실 공간) ≈ 19만원 = 월 70만원 · 온라인은 관리 공간이 없어 56만원 · 오프라인 단과의 학원 5 : 강사 5는 학원 기존 방식이며 관리반 정산에는 넣지 않습니다<br>· 비율·관리비·임대료·수강료·단과 매출은 모두 예시값이며 이 브라우저에 저장됩니다 (서버 연결 후 운영 설정으로 옮김)</div>';
     return h;
@@ -7432,7 +7550,7 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
   }
   function read(){
     const v=function(id){ const e=document.getElementById(id); return e?e.value:""; }, num=function(id){ return Math.max(0,+v(id)||0); };
-    C.fee={off:num("sF_off"),on:num("sF_on")}; C.mgmt=num("sMg"); C.list={off:num("sL_off"),on:num("sL_on")}; C.rk={off:{n:num("sKn_off"),amt:num("sKa_off")},on:{n:num("sKn_on"),amt:num("sKa_on")}}; C.rent=num("sRent");
+    C.fee={off:num("sF_off"),on:num("sF_on")}; C.mgmt=num("sMg"); C.list={off:num("sL_off"),on:num("sL_on")}; C.rk={off:{n:num("sKn_off"),amt:num("sKa_off")},on:{n:num("sKn_on"),amt:num("sKa_on")}}; C.rent=num("sRent"); C.reg={rate:Math.min(100,num("sRgR")),off:num("sRg_off"),on:num("sRg_on")};
     C.ratio={off:[num("sR_off0"),num("sR_off1"),num("sR_off2")],on:[num("sR_on0"),num("sR_on1"),num("sR_on2")]};
     C.basis=v("sBasis")||"mix"; C.mix=Math.min(100,num("sMix"));
     J().forEach(function(j){ C.N[j[0]]={off:num("sN_off_"+j[0]),on:num("sN_on_"+j[0])}; });
@@ -7448,10 +7566,201 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
     if(anchor&&anchor.parentNode) anchor.parentNode.insertBefore(pn,anchor); else wrap.appendChild(pn);
     bind(pn); render();
     const ad=document.getElementById("rfAdd"); if(ad) ad.onclick=ldAdd; ldRender();
+    ["rfStart","rfEnd"].forEach(function(id){ const e=document.getElementById(id); if(e) e.addEventListener("change",rfDates); });
+    const ca=document.getElementById("cvAdd"); if(ca) ca.onclick=cvAdd; cvRender();
+    closeBar(); lockInputs();
   }
   window.g5SettleMount=mount;
   const oO=window.ccOpenAdmin;
   if(oO){ ccOpenAdmin=async function(){ const r=await oO.apply(this,arguments); try{ mount(); }catch(e){ console.warn(e); } return r; }; window.ccOpenAdmin=ccOpenAdmin; }
+})();
+</script>
+<script>
+/* 서버 연결 전에도 가상 강의실 왼쪽에 채팅창 모양을 보여 줌 (실시간 대화 · 귓속말 · 공지는 서버 연결 후 열림) */
+(function(){
+  function shell(mode,hostId){
+    const h=document.getElementById(hostId); if(!h||h.querySelector(".ccchat")) return;
+    try{ h.innerHTML=ccChatHTML(mode); }catch(e){ return; }
+    const lv=document.getElementById("ccLive"); if(lv){ lv.textContent="준비 중"; lv.classList.remove("on"); }
+    const m=document.getElementById("ccMsgs"); if(m) m.innerHTML='<div style="margin:auto;padding:18px 10px;text-align:center;font-size:.8rem;color:var(--mute);line-height:1.7">💬 특별관리반 채팅방은<br><b>서버가 연결되면</b> 열립니다<br><small>실시간 대화 · 귓속말 · 관리자 공지 · 입장 알림</small></div>';
+    const n=document.getElementById("ccNotice"); if(n&&!n.textContent) n.textContent="공지는 관리자가 올리면 여기에 보입니다";
+    const ppl=document.getElementById("ccPpl"); if(ppl) ppl.innerHTML='<span class="ccpnone">지금 강의실에 들어와 있는 수강생이 없습니다</span>';
+    const i=document.getElementById("ccIn"); if(i){ i.disabled=true; i.placeholder="서버 연결 후 대화할 수 있습니다"; }
+    h.querySelectorAll(".ccin button").forEach(function(b){ b.disabled=true; });
+  }
+  const o=ccChatStart;
+  ccChatStart=async function(mode,hostId){ if(typeof sb==="undefined"||!sb){ shell(mode,hostId); return; } return o.apply(this,arguments); };
+  window.ccChatStart=ccChatStart;
+  const oa=applyUser;
+  applyUser=function(){ const r=oa.apply(this,arguments); setTimeout(function(){ if(!sb&&!window.ccPreview) shell("student","ccChatStu"); },120); return r; };
+  window.applyUser=applyUser;
+})();
+</script>
+<!-- ═══ 강의실 위아래 둘로: 위 = 실강의실(오프라인 지정석 · A반 · B반) · 아래 = 온라인 관리반(접속하면 빈자리에 무작위 배석) ═══
+     실강의실은 도면을 받기 전까지 임시 배치(6줄 × 8석 · 가운데 통로)로 보여 줌 -->
+<style>
+.g5real{margin:2px 0 12px;padding:10px 12px 12px;border:1px solid var(--line);border-radius:12px;background:rgba(0,0,0,.12)}
+.g5rh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.g5rh b{font-size:.84rem}
+.g5rh .g5tmp{font-size:.66rem;font-weight:700;color:var(--mute);border:1px dashed var(--line);border-radius:999px;padding:1px 8px}
+.g5rtabs{display:flex;gap:6px;margin-left:auto}
+.g5rtab{font:inherit;font-size:12px;font-weight:800;padding:4px 12px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--sub,var(--mute));cursor:pointer}
+.g5rtab.on{border-color:var(--gold);color:var(--gold);background:rgba(232,185,60,.1)}
+.g5rtab small{font-weight:500;color:var(--mute);margin-left:3px}
+.g5front{text-align:center;font-size:.66rem;font-weight:800;letter-spacing:.2em;color:var(--mute);border:1px solid var(--line);border-radius:6px;padding:3px;margin-bottom:8px;background:rgba(255,255,255,.04)}
+.g5plan{display:grid;grid-template-columns:repeat(4,1fr) 16px repeat(4,1fr);gap:5px}
+.g5s{height:24px;border-radius:5px 5px 8px 8px;border:1px dashed rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:9.5px;color:var(--mute);overflow:hidden;white-space:nowrap;letter-spacing:-.3px}
+.g5s.as{border-style:solid;border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:var(--sub,var(--mute))}
+.g5s.in{background:linear-gradient(160deg,rgba(201,162,39,.32),rgba(201,162,39,.1));border:1px solid rgba(201,162,39,.55);color:#e8d9a8}
+.g5s.away{background:rgba(229,190,68,.08);border:1px dashed #e5be44;color:#e5be44}
+.g5s.me{box-shadow:0 0 0 2px var(--gold),0 0 14px rgba(201,162,39,.45);font-weight:900}
+.g5aisle{}
+.g5s.pk{cursor:pointer;border-color:rgba(232,185,60,.45)}.g5s.pk:hover,.g5s.pk:focus-visible{background:rgba(232,185,60,.15);color:var(--gold);outline:none}
+.g5s.sel{background:rgba(232,185,60,.3)!important;border:1px solid var(--gold)!important;color:var(--gold)!important;font-weight:900}
+.g5pkbar{margin:0 0 10px;padding:9px 12px;border:1px solid var(--gold);border-radius:10px;background:rgba(232,185,60,.1);font-size:.8rem;line-height:1.6}
+.g5pkbar span{display:flex;gap:6px;margin-top:6px}
+.g5pkbar button{font:inherit;font-size:.78rem;font-weight:800;padding:5px 12px;border-radius:8px;border:1px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer}
+.g5pkbar button#g5PkOk{background:var(--gold);color:#0b1730}
+.g5leg{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:8px;font-size:.66rem;color:var(--mute)}
+.g5leg i{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:-1px;margin-right:4px;border:1px dashed rgba(255,255,255,.2)}
+.g5leg i.as{border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06)}.g5leg i.in{border:1px solid rgba(201,162,39,.6);background:rgba(201,162,39,.3)}.g5leg i.away{border-color:#e5be44}
+.g5onlh{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:.84rem}
+.g5onlh small{font-size:.68rem;color:var(--mute);font-weight:500}
+#homeHero .classroom.g5split .seatgrid{flex:none;grid-auto-rows:16px;gap:4px}
+#homeHero .classroom.g5split .seat{min-height:0;height:16px;border-radius:4px;font-size:0}
+#homeHero .classroom.g5split .seat.me{font-size:0}
+#homeHero .classroom.g5split .crfoot{margin-top:8px}
+.g5tst{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:.68rem;color:var(--mute);align-items:center}
+.g5tst button{font:inherit;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--sub,var(--mute));cursor:pointer}
+.g5tst button.on{border-color:var(--gold);color:var(--gold)}
+/* 관리자: 지정석 배정 */
+#g5SeatAdm .g5plan{max-width:560px}
+#g5SeatAdm .g5s{height:34px;font-size:11px;cursor:pointer}
+#g5SeatAdm .g5s.sel{outline:2px solid var(--gold);outline-offset:1px}
+#g5SeatAdm .g5s[draggable=true]{cursor:grab}#g5SeatAdm .g5s.dg{opacity:.4}
+#g5SeatAdm .g5s.ov{background:rgba(232,185,60,.25);border:1px solid var(--gold);color:var(--gold)}
+#g5SeatAdm .g5sf{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:.84rem}
+#g5SeatAdm .g5sf input{padding:6px 9px;border:1px solid var(--line);border-radius:7px;background:rgba(0,0,0,.18);color:inherit;font:inherit;width:150px}
+</style>
+<script>
+(function(){
+  /* 임시 도면: 반마다 6줄 × 8석 (가운데 통로) — 도면을 받으면 이 설정만 바꿈 */
+  window.G5_ROOMS=window.G5_ROOMS||{A:{rows:6,cols:8,aisle:4},B:{rows:6,cols:8,aisle:4}};
+  const AK="g5_seat_assign", OK="g5_online_seat";
+  /* 지정석: {A:{"1":{login:"test01",name:"김과장"}}, B:{}} — 서버 연결 후 관리자 배정 표로 옮김 */
+  /* 가상 지정석: test01 · test02는 이미 자리를 정한 상태 · test03은 아직 안 정함(첫 배석 점검용) */
+  const DEF_AS={A:{"5":{login:"test01",name:"김과장"},"14":{login:"test02",name:"이대리"}},B:{}};
+  function asLoad(){ try{ const v=JSON.parse(localStorage.getItem(AK)||"null"); if(v&&typeof v==="object") return v; }catch(e){} return JSON.parse(JSON.stringify(DEF_AS)); }
+  function asSave(v){ try{ localStorage.setItem(AK,JSON.stringify(v)); }catch(e){} }
+  window.g5SeatAssign=asLoad;
+  function esc(x){ return String(x==null?"":x).replace(/[&<>"']/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function mask(n){ try{ return window.ccFameMask?ccFameMask(n):ccMaskName(n); }catch(e){ return n; } }
+  function meId(){ return user?(user.login_id||user.id||user.name):null; }
+  function mySeat(){ const A=asLoad(), id=meId(); if(!id) return null; for(const r in A){ for(const n in A[r]){ if(A[r][n]&&A[r][n].login===id) return {room:r,seat:+n}; } } return null; }
+  /* 오프라인(실강)생인지: 지정석이 있으면 실강생 · 점검용 전환 단추로 바꿔 볼 수 있음 */
+  function isOff(){ if(!user) return false; let f=null; try{ f=localStorage.getItem("g5_view_as_"+meId()); }catch(e){} if(f==="on") return false; if(f==="off") return true; return !!mySeat()||!!(window.G5_TESTERS&&G5_TESTERS[meId()])||user.cls==="off"; }
+  let view="A", pick=null;
+  /* 첫 배석: 실강생이 아직 지정석이 없으면, 관리자가 알려 준 자리를 직접 눌러 정함 → 그 뒤로는 계속 그 자리 (바꾸기는 관리자만) */
+  function picking(){ return isOff()&&!mySeat(); }
+  function drawReal(){
+    const host=document.getElementById("g5Real"); if(!host) return;
+    const A=asLoad(), me=mySeat(), off=isOff(), st=(window.ccStudy&&ccStudy.data())||{}, away=!!(st.open&&st.open.mode==="away");
+    const cnt=function(r){ return Object.keys(A[r]||{}).filter(function(k){ return A[r][k]; }).length; };
+    const present=function(r,n){ return off&&me&&me.room===r&&me.seat===+n; };   /* 다른 수강생의 착석 표시는 서버 연결 후 */
+    const inN=function(r){ return off&&me&&me.room===r&&!away?1:0; };
+    const R=G5_ROOMS[view]; let h="", k=0;
+    for(let r=0;r<R.rows;r++){ for(let c=0;c<R.cols;c++){ if(c===R.aisle) h+='<div class="g5aisle"></div>'; k++;
+      const a=(A[view]||{})[k], isMe=off&&me&&me.room===view&&me.seat===k, pr=present(view,k);
+      const cls="g5s"+(a?" as":"")+(pr?(away?" away":" in"):"")+(isMe?" me":"");
+      const lab=a?(isMe?"나":mask(a.name)):k;
+      const can=picking()&&!a; 
+      h+='<div class="'+cls+(can?' pk':'')+(pick&&pick.room===view&&pick.seat===k?' sel':'')+'"'+(can?' data-pk="'+k+'" role="button" tabindex="0"':'')+' title="'+view+'반 '+k+'번'+(a?' · 지정석 '+esc(mask(a.name))+(pr?(away?' · 자리 비움':' · 공부 중'):' · 아직 안 옴'):' · 빈자리')+'">'+esc(lab)+'</div>'; } }
+    const pkBar=picking()?('<div class="g5pkbar">'+(pick?'<b>'+pick.room+'반 '+pick.seat+'번</b>을 내 지정석으로 정할까요? 한 번 정하면 앞으로 계속 이 자리이고, 바꾸려면 관리자에게 요청해야 합니다 <span><button type="button" id="g5PkOk">이 자리로 정하기</button><button type="button" id="g5PkNo">다시 고르기</button></span>':'🪑 <b>처음 오셨네요.</b> 관리자가 알려 준 <b>내 자리</b>를 아래 도면에서 눌러 주세요 (빈자리만 누를 수 있습니다)')+'</div>'):'';
+    host.innerHTML=pkBar+'<div class="g5rh"><b>🏫 실강의실</b><small style="color:var(--mute);font-size:.68rem">오프라인 관리반 · 지정석</small><span class="g5tmp">임시 배치 · 도면 반영 전</span>'+
+      '<span class="g5rtabs">'+Object.keys(G5_ROOMS).map(function(r){ return '<button type="button" class="g5rtab'+(r===view?' on':'')+'" data-r="'+r+'">'+r+'반'+(me&&me.room===r&&off?' ★':'')+'<small>'+inN(r)+'/'+cnt(r)+'</small></button>'; }).join("")+'</span></div>'+
+      '<div class="g5front">칠판 · 강단</div><div class="g5plan">'+h+'</div>'+
+      '<div class="g5leg"><span><i></i>빈자리</span><span><i class="as"></i>지정석 · 아직 안 옴</span><span><i class="in"></i>공부 중</span><span><i class="away"></i>자리 비움</span><span>탭 숫자 = 지금 공부 중 / 지정석 수</span></div>'+
+      (window.G5_TESTERS&&G5_TESTERS[meId()]?'<div class="g5tst">점검용 보기 <button type="button" data-v="off" class="'+(off?'on':'')+'">실강생으로</button><button type="button" data-v="on" class="'+(off?'':'on')+'">온라인생으로</button></div>':'');
+    host.querySelectorAll("[data-r]").forEach(function(b){ b.onclick=function(){ view=b.dataset.r; drawReal(); }; });
+    host.querySelectorAll("[data-pk]").forEach(function(b){ const go=function(){ pick={room:view,seat:+b.dataset.pk}; drawReal(); }; b.onclick=go; b.onkeydown=function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); go(); } }; });
+    const ok=document.getElementById("g5PkOk"); if(ok) ok.onclick=function(){ const A=asLoad(); A[pick.room]=A[pick.room]||{};
+      if(A[pick.room][pick.seat]){ toast("방금 다른 수강생이 그 자리를 정했습니다 — 다른 자리를 골라 주세요"); pick=null; drawReal(); return; }
+      A[pick.room][pick.seat]={login:meId(),name:user.name,at:new Date().toISOString(),by:"self"}; asSave(A); toast(pick.room+"반 "+pick.seat+"번이 내 지정석이 되었습니다"); view=pick.room; pick=null; sync(); };
+    const no=document.getElementById("g5PkNo"); if(no) no.onclick=function(){ pick=null; drawReal(); };
+    host.querySelectorAll("[data-v]").forEach(function(b){ b.onclick=function(){ try{ localStorage.setItem("g5_view_as_"+meId(),b.dataset.v); }catch(e){} sync(); }; });
+  }
+  /* 온라인 반 이름: A~E → 온라인 1반~5반 (실강의실 A·B반과 헷갈리지 않게) */
+  const ON=function(c){ return "온라인 "+(String(c).charCodeAt(0)-64)+"반"; };
+  function relabel(){
+    const t=document.getElementById("crTabs"); if(t) t.querySelectorAll(".crtab").forEach(function(b){ const m=/^([A-E])반/.exec(b.textContent); if(m&&b.firstChild&&b.firstChild.nodeType===3) b.firstChild.nodeValue=b.firstChild.nodeValue.replace(m[1]+"반",ON(m[1])); });
+    const g=document.getElementById("seatgrid"); if(g) g.querySelectorAll(".seat[title]").forEach(function(s){ s.title=s.title.replace(/^([A-E])반/,function(_,c){ return ON(c); }); });
+    const lg=document.getElementById("crLog"); if(lg) lg.textContent=lg.textContent.replace(/나는 ([A-E])반/,function(_,c){ return "나는 "+ON(c); });
+  }
+  const oDraw=ccRoomDraw;
+  ccRoomDraw=function(){ const r=oDraw.apply(this,arguments); try{ relabel(); }catch(e){} return r; };
+  window.ccRoomDraw=ccRoomDraw;
+  /* 서버 연결 전: 온라인생이면 오늘 하루 같은 자리에 무작위 배석 (서버 연결 후에는 서버가 빈자리를 골라 줌) */
+  function onlineSeat(){
+    if(typeof sb!=="undefined"&&sb) return;
+    const id=meId(); ccRoom.list=ccRoom.list.filter(function(x){ return x.user_id!==id; });
+    if(!user||isOff()){ ccRoom.me=null; ccRoomDraw(); const lg=document.getElementById("crLog"); if(lg) lg.textContent=user&&mySeat()?"나는 실강의실 "+mySeat().room+"반 "+mySeat().seat+"번 지정석 ★":""; return; }
+    const d=new Date().toDateString(); let o=null; try{ o=JSON.parse(localStorage.getItem(OK)||"null"); }catch(e){}
+    if(!o||o.d!==d||o.id!==id){ const C=["A","B","C","D","E"]; o={d:d,id:id,cls:C[Math.floor(Math.random()*C.length)],seat:1+Math.floor(Math.random()*50)}; try{ localStorage.setItem(OK,JSON.stringify(o)); }catch(e){} }
+    ccRoom.me={cls:o.cls,seat:o.seat}; ccRoom.view=o.cls; ccRoom.list.push({user_id:id,cls:o.cls,seat:o.seat,name:mask(user.name)});
+    ccRoomDraw(); const lg=document.getElementById("crLog"); if(lg) lg.textContent="나는 "+ON(o.cls)+" "+o.seat+"번 자리 ★ (오늘 무작위 배석)";
+  }
+  function mount(){
+    const cr=document.querySelector("#homeHero .classroom"); if(!cr) return;
+    cr.classList.add("g5split");
+    const bd=cr.querySelector(".cboard"); if(bd&&!bd.dataset.g5){ bd.dataset.g5=1; bd.innerHTML='5급공채특별관리반 · 강의실 <span class="crlive">● LIVE</span>'; }
+    if(!document.getElementById("g5Real")){ const d=document.createElement("div"); d.id="g5Real"; d.className="g5real"; const tabs=document.getElementById("crTabs"); cr.insertBefore(d,tabs);
+      const h=document.createElement("div"); h.className="g5onlh"; h.id="g5OnlH"; h.innerHTML='<b>💻 온라인 관리반</b><small>접속하면 빈자리에 무작위로 앉습니다</small>'; cr.insertBefore(h,tabs); }
+  }
+  function sync(){ mount(); drawReal(); onlineSeat(); }
+  window.g5RoomSync=sync;
+  const oa=applyUser; applyUser=function(){ const r=oa.apply(this,arguments); setTimeout(sync,200); return r; }; window.applyUser=applyUser;
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",function(){ mount(); drawReal(); }); else { mount(); drawReal(); }
+  setInterval(function(){ try{ drawReal(); }catch(e){} },5000);
+  /* 자리 떠남 · 돌아오기 누르면 바로 반영 */
+  document.addEventListener("click",function(e){ if(e.target&&e.target.id==="stLeave") setTimeout(drawReal,50); });
+
+  /* ── 관리자: 지정석 배정 (도면 반영 전 임시) ── */
+  let aView="A", sel=null, drag=null;
+  function moveSeat(f,t){ if(f.room===t.room&&f.seat===t.seat) return; const A=asLoad(); A[f.room]=A[f.room]||{}; A[t.room]=A[t.room]||{};
+    const a=A[f.room][f.seat], b=A[t.room][t.seat]; if(!a) return;
+    A[t.room][t.seat]=Object.assign({},a,{by:"admin",at:new Date().toISOString()}); if(b) A[f.room][f.seat]=Object.assign({},b,{by:"admin",at:new Date().toISOString()}); else delete A[f.room][f.seat];
+    asSave(A); sel=t.seat; aView=t.room; admDraw();
+    toast(b?(a.name+" ↔ "+b.name+" 자리를 맞바꿨습니다 ("+f.room+"반 "+f.seat+"번 ↔ "+t.room+"반 "+t.seat+"번)"):(a.name+" → "+t.room+"반 "+t.seat+"번으로 옮겼습니다")); }
+  function admDraw(){
+    const p=document.getElementById("g5SeatAdm"); if(!p) return; const A=asLoad(), R=G5_ROOMS[aView]; let h="", k=0;
+    for(let r=0;r<R.rows;r++){ for(let c=0;c<R.cols;c++){ if(c===R.aisle) h+='<div></div>'; k++; const a=(A[aView]||{})[k];
+      h+='<div class="g5s'+(a?' as':'')+(sel===k?' sel':'')+'" data-k="'+k+'"'+(a?' draggable="true"':'')+' title="'+aView+'반 '+k+'번'+(a?' · '+esc(a.login)+(a.by==="self"?' · 수강생이 첫 로그인 때 직접 정함':' · 관리자 배정'):'')+'">'+(a?esc(a.name)+(a.by==="self"?'✓':''):k)+'</div>'; } }
+    const a=sel?(A[aView]||{})[sel]:null;
+    p.innerHTML='<h3>🪑 실강의실 지정석 배정 <span class="ex">임시 배치 · 도면 반영 전</span></h3><div class="sub">실강생은 <b>첫 로그인 때 관리자가 알려 준 자리를 직접 눌러</b> 지정석을 정합니다(✓ 표시) · <b>자리를 옮길 때는 앉은 자리를 원하는 자리로 끌어다 놓으세요</b> (사람이 있는 자리에 놓으면 서로 맞바꿈 · 다른 반 탭 위로 끌면 그 반으로 넘어감) · 그 뒤 자리를 바꾸거나 미리 정해 줄 때는 여기서 자리를 누르고 아이디·이름을 넣으세요 · 서버 연결 전이라 이 브라우저에만 저장됩니다</div>'+
+      '<div class="g5rtabs" style="margin:10px 0 8px">'+Object.keys(G5_ROOMS).map(function(r){ return '<button type="button" class="g5rtab'+(r===aView?' on':'')+'" data-ar="'+r+'">'+r+'반 <small>'+Object.keys(A[r]||{}).filter(function(x){ return A[r][x]; }).length+'석 배정</small></button>'; }).join("")+'</div>'+
+      '<div class="g5front" style="max-width:560px">칠판 · 강단</div><div class="g5plan">'+h+'</div>'+
+      '<div class="g5sf">'+(sel?'<b>'+aView+'반 '+sel+'번</b> 아이디 <input id="g5aId" value="'+esc(a?a.login:"")+'" placeholder="예: test04"> 이름 <input id="g5aNm" value="'+esc(a?a.name:"")+'" placeholder="예: 홍길동"> <button type="button" class="mini" id="g5aSave" style="border-color:var(--gold);color:var(--gold)">배정</button>'+(a?' <button type="button" class="mini" id="g5aDel">비우기</button>':'')+'<span id="g5aErr" style="color:#c0392b;font-size:.78rem"></span>':'<span style="color:var(--mute)">배정할 자리를 누르세요</span>')+'</div>';
+    p.querySelectorAll("[data-ar]").forEach(function(b){ b.onclick=function(){ aView=b.dataset.ar; sel=null; admDraw(); }; });
+    p.querySelectorAll("[data-k]").forEach(function(b){ b.onclick=function(){ sel=+b.dataset.k; admDraw(); const i=document.getElementById("g5aId"); if(i) i.focus(); };
+      /* 끌어서 옮기기: 앉은 자리를 빈자리로 끌면 이동 · 다른 사람 자리로 끌면 두 사람 자리 맞바꿈 · 다른 반 탭 위에 놓으면 그 반 같은 번호로 */
+      b.ondragstart=function(e){ drag={room:aView,seat:+b.dataset.k}; try{ e.dataTransfer.setData("text/plain",aView+":"+b.dataset.k); e.dataTransfer.effectAllowed="move"; }catch(x){} b.classList.add("dg"); };
+      b.ondragend=function(){ b.classList.remove("dg"); p.querySelectorAll(".ov").forEach(function(o){ o.classList.remove("ov"); }); };
+      b.ondragover=function(e){ if(!drag) return; e.preventDefault(); b.classList.add("ov"); };
+      b.ondragleave=function(){ b.classList.remove("ov"); };
+      b.ondrop=function(e){ e.preventDefault(); b.classList.remove("ov"); if(!drag) return; moveSeat(drag,{room:aView,seat:+b.dataset.k}); drag=null; };
+    });
+    p.querySelectorAll("[data-ar]").forEach(function(t){ t.ondragover=function(e){ if(!drag||t.dataset.ar===aView) return; e.preventDefault(); aView=t.dataset.ar; admDraw(); }; });
+    const sv=document.getElementById("g5aSave"); if(sv) sv.onclick=function(){ const id=(document.getElementById("g5aId").value||"").trim().toLowerCase(), nm=(document.getElementById("g5aNm").value||"").trim(), er=document.getElementById("g5aErr");
+      if(!id||!nm){ er.textContent="아이디와 이름을 넣어 주세요"; return; }
+      const A=asLoad(); for(const r in A){ for(const n in A[r]){ if(A[r][n]&&A[r][n].login===id&&!(r===aView&&+n===sel)){ er.textContent=id+"는 이미 "+r+"반 "+n+"번에 배정돼 있습니다 — 그 자리를 먼저 비워 주세요"; return; } } }
+      A[aView]=A[aView]||{}; A[aView][sel]={login:id,name:nm}; asSave(A); toast(aView+"반 "+sel+"번 지정석 → "+nm); admDraw(); };
+    const dl=document.getElementById("g5aDel"); if(dl) dl.onclick=function(){ const A=asLoad(); delete A[aView][sel]; asSave(A); admDraw(); };
+  }
+  function admMount(){ const wrap=document.querySelector("#adminView .awrap"); if(!wrap||document.getElementById("g5SeatAdm")) return;
+    const p=document.createElement("div"); p.className="panel"; p.id="g5SeatAdm"; p.style.marginTop="22px";
+    const st=document.getElementById("g5Settle"); if(st&&st.parentNode) st.parentNode.insertBefore(p,st.nextSibling); else wrap.appendChild(p); admDraw(); }
+  const oO=window.ccOpenAdmin;
+  if(oO){ ccOpenAdmin=async function(){ const r=await oO.apply(this,arguments); try{ admMount(); }catch(e){ console.warn(e); } return r; }; window.ccOpenAdmin=ccOpenAdmin; }
 })();
 </script>
 </body>
