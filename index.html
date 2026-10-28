@@ -7139,5 +7139,154 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
   ccTrackBar=function(){ const r=o.apply(this,arguments); try{ const b=document.getElementById("ccTrackBar"); if(b) b.querySelectorAll(".ctb small").forEach(function(sm,i){ const t=["1차","2차"][i]; sm.innerHTML=sm.innerHTML.replace(/\d+과목/, (window.g5Laws?g5Laws(t).length:CC_LAWS[t].length)+"과목"); }); }catch(e){} return r; };
   window.ccTrackBar=ccTrackBar; })();
 </script>
+<!-- ═══ 관리자: 💰 강사 수강료 정산 (월 단위) ═══
+   관리비(수강생 1인당) 먼저 공제 → 남은 금액을 실강·인강별 비율(학원 : 강사 : 운영자)로 나눔 → 강사 몫은 과목 강사별로 배분
+   서버 연결 전: 인원·시간을 관리자가 직접 넣는 모의 정산 · 서버 연결 후 실제 결제·출석·재생 기록으로 채움 -->
+<style>
+#g5Settle .sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px;margin-top:12px}
+#g5Settle .sbox{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:rgba(255,255,255,.03);min-width:0}
+#g5Settle .sbox h4{margin:0 0 8px;font-size:.88rem}
+#g5Settle .srow{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.82rem;margin:6px 0}#g5Settle .srow>span{display:flex;align-items:center;gap:5px;flex:none;white-space:nowrap}#g5Settle .srow>small{flex:1}
+#g5Settle input[type=number],#g5Settle select{width:84px;flex:none;padding:5px 7px;border:1px solid var(--line);border-radius:7px;background:rgba(0,0,0,.18);color:inherit;font:inherit;text-align:right}
+#g5Settle select{width:auto;text-align:left}
+#g5Settle .ratio input{width:48px}
+#g5Settle table{width:100%;border-collapse:collapse;font-size:.8rem;font-variant-numeric:tabular-nums}
+#g5Settle th,#g5Settle td{padding:6px 5px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+#g5Settle th:first-child,#g5Settle td:first-child{text-align:left}
+#g5Settle th{color:var(--mute);font-weight:500}
+#g5Settle tr.tot td{font-weight:800;border-top:2px solid var(--line)}
+#g5Settle .ex{font-size:.68rem;font-weight:800;color:var(--gold);border:1px solid var(--gold);border-radius:999px;padding:0 7px;margin-left:6px}
+#g5Settle .kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:12px}
+#g5Settle .kp div{border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+#g5Settle .kp b{display:block;font-size:1.05rem}
+#g5Settle .kp span{font-size:.72rem;color:var(--mute)}
+#g5Settle .kp .me{border-color:var(--gold)}
+#g5Settle .scroll{overflow-x:auto}
+#g5Settle .note{font-size:.74rem;color:var(--mute);margin-top:10px;line-height:1.6}
+</style>
+<script>
+(function(){
+  const KEY="g5_settle_cfg2";
+  const DEF={
+    fee:{off:700000,on:700000}, mgmt:60000, rent:3000000,
+    ratio:{off:[4,4,2],on:[4,3,3]},          /* 학원 : 강사 : 운영자 */
+    basis:"mix", mix:70,
+    N:{"일반행정":{off:12,on:30},"인사조직":{off:3,on:8},"재경":{off:6,on:15},"교육행정":{off:2,on:5}},
+    H:{}                                     /* 과목별 1인 평균 시간 {과목:{off:실강 출석, on:인강 재생}} — 비면 카탈로그 비중과 같게 */
+  };
+  let C; try{ C=Object.assign({},DEF,JSON.parse(localStorage.getItem(KEY)||"null")||{}); }catch(e){ C=JSON.parse(JSON.stringify(DEF)); }
+  const save=function(){ try{ localStorage.setItem(KEY,JSON.stringify(C)); }catch(e){} };
+  const won=function(v){ return Math.round(v).toLocaleString("ko-KR"); };
+  const man=function(v){ return (Math.round(v/1000)/10).toLocaleString("ko-KR")+"만"; };
+  const J=function(){ return window.G5_JIK||[["일반행정","정치학"],["인사조직","정치학"],["재경","재정학"],["교육행정","교육학"]]; };
+  const BASE=function(){ return (typeof NM_BASE2!=="undefined"?NM_BASE2:["경제학","행정법","행정학"]); };
+  const cat=function(subj){ try{ return (CC_CATALOG["2차"][subj]||[]).reduce(function(a,b){ return a+(+b||0); },0); }catch(e){ return 0; } };
+  const prof=function(subj){ try{ return (CC_PROF["2차"]||{})[subj]||"미정"; }catch(e){ return "미정"; } };
+  const subjects=function(){ const a=BASE().slice(); J().forEach(function(j){ if(a.indexOf(j[1])<0) a.push(j[1]); }); return a; };
+
+  function calc(){
+    const res={}, sum={off:{sales:0,mgmt:0,rent:0,pool:0,acad:0,inst:0,me:0,n:0},on:{sales:0,mgmt:0,rent:0,pool:0,acad:0,inst:0,me:0,n:0}};
+    /* 임대료(월 고정비)는 관리반 전체가 함께 부담 — 각 직렬·유형 매출 비중대로 나눠 관리비와 함께 먼저 뺌 */
+    let allBase=0; J().forEach(function(j){ ["off","on"].forEach(function(t){ const n=+((C.N[j[0]]||{})[t]||0); allBase+=n*Math.max(0,(+C.fee[t]||0)-(+C.mgmt||0)); }); });
+    const rentAll=+C.rent||0, deficit=allBase<rentAll;   /* 인원이 모자라 (매출 − 관리비)가 임대료보다 작으면 적자 → 배분할 금액 없음 */
+    subjects().forEach(function(s){ res[s]={off:0,on:0}; });
+    J().forEach(function(j){
+      const subs=BASE().concat([j[1]]);
+      ["off","on"].forEach(function(t){
+        const n=+((C.N[j[0]]||{})[t]||0), fee=+C.fee[t]||0, R=C.ratio[t], rs=(+R[0]||0)+(+R[1]||0)+(+R[2]||0)||1;
+        const sales=n*fee, mg=Math.min(sales,n*(+C.mgmt||0)), base=sales-mg, rt=allBase?rentAll*base/allBase:0, pool=deficit?0:base-rt;
+        const S=sum[t]; S.n+=n; S.sales+=sales; S.mgmt+=mg; S.rent+=rt; S.pool+=pool;
+        S.acad+=pool*(+R[0]||0)/rs; S.me+=pool*(+R[2]||0)/rs; const inst=pool*(+R[1]||0)/rs; S.inst+=inst;
+        const cw=subs.map(cat), ct=cw.reduce(function(a,b){ return a+b; },0)||1;
+        const hw=subs.map(function(s,i){ const h=(C.H[s]||{})[t]; return (h===""||h==null)?cw[i]/ct*100:+h; }), ht=hw.reduce(function(a,b){ return a+b; },0)||1;
+        subs.forEach(function(s,i){
+          const c=cw[i]/ct, h=hw[i]/ht, w=C.basis==="cat"?c:(C.basis==="act"?h:(C.mix/100*c+(1-C.mix/100)*h));
+          res[s][t]+=inst*w;
+        });
+      });
+    });
+    return {res:res,sum:sum,deficit:deficit,net:allBase-rentAll};
+  }
+  function render(){
+    const pn=document.getElementById("g5Settle"); if(!pn) return;
+    const R=calc(), S=R.sum, tot=function(k){ return S.off[k]+S.on[k]; };
+    const body=document.getElementById("g5SetOut");
+    body.innerHTML=
+      '<div class="kp">'+
+        '<div><span>이달 관리반 매출 ('+(S.off.n+S.on.n)+'명)</span><b>'+man(tot("sales"))+'원</b></div>'+
+        '<div><span>관리비 선공제 (1인 '+won(C.mgmt)+'원)</span><b>'+man(tot("mgmt"))+'원</b></div>'+
+        '<div><span>임대료 선공제 (월 고정비)</span><b>'+man(+C.rent||0)+'원</b></div>'+
+        '<div'+(R.deficit?' style="border-color:#c0392b"':'')+'><span>정산 대상 금액</span><b'+(R.deficit?' style="color:#c0392b"':'')+'>'+(R.deficit?'적자 − '+man(-R.net):man(tot("pool")))+'원</b></div>'+
+        (function(){ const be=function(t){ const m=(+C.fee[t]||0)-(+C.mgmt||0); return m>0?Math.ceil((+C.rent||0)/m):'—'; };
+          return '<div><span>손익분기 인원 (임대료를 넘기는 최소 인원)</span><b>오프만 '+be("off")+'명 · 온만 '+be("on")+'명</b></div>'; })()+
+        '<div><span>학원 몫</span><b>'+man(tot("acad"))+'원</b></div>'+
+        '<div><span>강사 몫 (아래 표 합계)</span><b>'+man(tot("inst"))+'원</b></div>'+
+        '<div class="me"><span>운영자 몫</span><b>'+man(tot("me"))+'원</b></div>'+
+      '</div>'+
+      (R.deficit?'<div style="margin-top:12px;padding:10px 12px;border:1px solid #c0392b;border-radius:10px;color:#c0392b;font-size:.84rem">⚠ 이달 인원으로는 (매출 − 관리비)가 임대료 '+won(+C.rent||0)+'원에 못 미칩니다 — <b>적자 '+won(-R.net)+'원</b> · 학원·강사·운영자에게 나눌 금액이 없습니다</div>':'')+
+      '<div class="scroll" style="margin-top:12px"><table><thead><tr><th>정산 대상 계산</th><th>인원</th><th>매출</th><th>관리비</th><th>소계</th></tr></thead><tbody>'+
+      [["off","오프라인 관리반"],["on","온라인 관리반"]].map(function(x){ const s=S[x[0]];
+        return '<tr><td>'+x[1]+'</td><td>'+s.n+'명</td><td>'+won(s.sales)+'</td><td>− '+won(s.mgmt)+'</td><td>'+won(s.sales-s.mgmt)+'</td></tr>'; }).join("")+
+      '<tr><td>임대료 (월 고정비)</td><td></td><td></td><td></td><td>− '+won(+C.rent||0)+'</td></tr>'+
+      '<tr class="tot"><td>정산 대상 금액</td><td>'+(S.off.n+S.on.n)+'명</td><td>'+won(tot("sales"))+'</td><td>− '+won(tot("mgmt"))+'</td><td'+(R.deficit?' style="color:#c0392b"':'')+'>'+(R.deficit?'− '+won(-R.net)+' (적자)':won(tot("pool")))+'</td></tr></tbody></table></div>'+
+      '<div class="scroll" style="margin-top:12px"><table><thead><tr><th>배분</th><th>정산 대상</th><th>학원</th><th>강사</th><th>운영자</th></tr></thead><tbody>'+
+      [["off","실강분 (오프라인 "+C.ratio.off.join(":")+")"],["on","인강분 (온라인 "+C.ratio.on.join(":")+")"]].map(function(x){ const s=S[x[0]];
+        return '<tr><td>'+x[1]+'</td><td>'+won(s.pool)+'</td><td>'+won(s.acad)+'</td><td>'+won(s.inst)+'</td><td>'+won(s.me)+'</td></tr>'; }).join("")+
+      '<tr class="tot"><td>합계</td><td>'+won(tot("pool"))+'</td><td>'+won(tot("acad"))+'</td><td>'+won(tot("inst"))+'</td><td>'+won(tot("me"))+'</td></tr></tbody></table></div>'+
+'<h4 style="margin:16px 0 6px;font-size:.88rem">강사별 지급액 — '+({cat:"카탈로그 비중",act:"실제 수강 비중",mix:"혼합 "+C.mix+":"+(100-C.mix)}[C.basis])+'</h4>'+
+      '<div class="scroll"><table><thead><tr><th>과목</th><th>강사</th><th>받는 직렬</th><th>실강분</th><th>인강분</th><th>합계</th></tr></thead><tbody>'+
+      subjects().map(function(s){ const r=R.res[s], who=BASE().indexOf(s)>=0?"전 직렬":J().filter(function(j){ return j[1]===s; }).map(function(j){ return j[0]; }).join(" · ");
+        return '<tr><td>'+s+'</td><td>'+prof(s)+'</td><td>'+who+'</td><td>'+won(r.off)+'</td><td>'+won(r.on)+'</td><td><b>'+won(r.off+r.on)+'</b></td></tr>'; }).join("")+
+      '<tr class="tot"><td>합계</td><td></td><td></td><td>'+won(S.off.inst)+'</td><td>'+won(S.on.inst)+'</td><td>'+won(tot("inst"))+'</td></tr></tbody></table></div>';
+  }
+  function inputs(){
+    const n=function(id,v,step){ return '<input type="number" id="'+id+'" value="'+v+'" min="0" step="'+(step||1)+'">'; };
+    let h='<h3>💰 강사 수강료 정산 <span class="ex">예시값 · 모의 정산</span></h3>'+
+      '<div class="sub"><b>관리비(수강생 1인당) + 임대료(월 고정비)</b>를 먼저 떼고, 남은 금액을 실강·인강별로 <b>학원 : 강사 : 운영자</b> 비율로 나눕니다 · 강사 몫은 그 직렬 과목 강사에게 배분합니다 · 서버 연결 전이라 인원·시간을 직접 넣어 계산합니다</div>'+
+      '<div class="sgrid">'+
+      '<div class="sbox"><h4>수강료 · 관리비</h4>'+
+        '<div class="srow">오프라인 관리반 월 수강료'+n("sF_off",C.fee.off,10000)+'</div>'+
+        '<div class="srow">온라인 관리반 월 수강료'+n("sF_on",C.fee.on,10000)+'</div>'+
+        '<div class="srow">관리비 (1인당 선공제)'+n("sMg",C.mgmt,5000)+'</div>'+
+        '<div class="srow">임대료 (월 고정비 · 공동 선공제)'+n("sRent",C.rent==null?0:C.rent,100000)+'</div></div>'+
+      '<div class="sbox ratio"><h4>배분 비율 — 학원 : 강사 : 운영자</h4>'+
+        '<div class="srow">실강 (오프라인)<span>'+n("sR_off0",C.ratio.off[0])+' : '+n("sR_off1",C.ratio.off[1])+' : '+n("sR_off2",C.ratio.off[2])+'</span></div>'+
+        '<div class="srow">인강 (온라인)<span>'+n("sR_on0",C.ratio.on[0])+' : '+n("sR_on1",C.ratio.on[1])+' : '+n("sR_on2",C.ratio.on[2])+'</span></div>'+
+        '<div class="srow">강사 몫 배분 기준<select id="sBasis"><option value="cat">카탈로그 비중 (강의 수)</option><option value="act">실제 수강 비중</option><option value="mix">혼합</option></select></div>'+
+        '<div class="srow">혼합 시 카탈로그 비중 %'+n("sMix",C.mix,5)+'</div></div>'+
+      '<div class="sbox"><h4>직렬별 이달 인원</h4>'+
+        J().map(function(j){ const v=C.N[j[0]]||{off:0,on:0}; return '<div class="srow">'+j[0]+' <small style="color:var(--mute)">· '+j[1]+'</small><span>오프 '+n("sN_off_"+j[0],v.off)+' 온 '+n("sN_on_"+j[0],v.on)+'</span></div>'; }).join("")+'</div>'+
+      '<div class="sbox"><h4>과목별 1인 평균 시간 <small style="color:var(--mute);font-weight:500">(실제 수강 비중용 · 비우면 강의 수 비중)</small></h4>'+
+        subjects().map(function(s){ const v=C.H[s]||{}; return '<div class="srow">'+s+' <small style="color:var(--mute)">'+cat(s)+'강</small><span>실강 <input type="number" id="sH_off_'+s+'" value="'+(v.off==null?"":v.off)+'" min="0" placeholder="—"> 인강 <input type="number" id="sH_on_'+s+'" value="'+(v.on==null?"":v.on)+'" min="0" placeholder="—"></span></div>'; }).join("")+'</div>'+
+      '</div><div id="g5SetOut"></div>'+
+      '<div class="note">· 오프라인 관리반은 인강을 무료로 열지만 강사 수강료는 실강 기준으로만 나눕니다 · 온라인 관리반은 인강 기준입니다<br>· 1차(PSAT·헌법) 강의가 아직 없어 1차 강사 몫은 0으로 계산됩니다 — 강의가 들어오면 함께 배분됩니다<br>· 재등록 환불은 재등록한 달의 매출에서 빼서 처리합니다 · 장학 응시권은 수강료 정산에 영향이 없습니다<br>· 임대료는 월 고정비로 전체 금액에서 한 번 뺍니다 — 실강분·인강분은 임대료를 뺀 정산 대상 금액을 두 관리반의 (매출 − 관리비) 비중대로 나눈 것입니다<br>· 비율·관리비·임대료·수강료는 모두 예시값이며 이 브라우저에 저장됩니다 (서버 연결 후 운영 설정으로 옮김)</div>';
+    return h;
+  }
+  function bind(pn){
+    pn.querySelector("#sBasis").value=C.basis;
+    pn.querySelectorAll("input,select").forEach(function(el){ el.addEventListener("input",read); el.addEventListener("change",read); });
+  }
+  function read(){
+    const v=function(id){ const e=document.getElementById(id); return e?e.value:""; }, num=function(id){ return Math.max(0,+v(id)||0); };
+    C.fee={off:num("sF_off"),on:num("sF_on")}; C.mgmt=num("sMg"); C.rent=num("sRent");
+    C.ratio={off:[num("sR_off0"),num("sR_off1"),num("sR_off2")],on:[num("sR_on0"),num("sR_on1"),num("sR_on2")]};
+    C.basis=v("sBasis")||"mix"; C.mix=Math.min(100,num("sMix"));
+    J().forEach(function(j){ C.N[j[0]]={off:num("sN_off_"+j[0]),on:num("sN_on_"+j[0])}; });
+    subjects().forEach(function(s){ const a=v("sH_off_"+s), b=v("sH_on_"+s); C.H[s]={off:a===""?null:+a,on:b===""?null:+b}; });
+    save(); render();
+  }
+  function mount(){
+    const wrap=document.querySelector("#adminView .awrap"); if(!wrap||document.getElementById("g5Settle")) return;
+    const pn=document.createElement("div"); pn.className="panel"; pn.id="g5Settle"; pn.style.marginTop="22px";
+    pn.innerHTML=inputs();
+    const anchor=document.getElementById("ccAppPanel")||wrap.querySelector(".panel");
+    if(anchor&&anchor.parentNode) anchor.parentNode.insertBefore(pn,anchor); else wrap.appendChild(pn);
+    bind(pn); render();
+  }
+  window.g5SettleMount=mount;
+  const oO=window.ccOpenAdmin;
+  if(oO){ ccOpenAdmin=async function(){ const r=await oO.apply(this,arguments); try{ mount(); }catch(e){ console.warn(e); } return r; }; window.ccOpenAdmin=ccOpenAdmin; }
+})();
+</script>
 </body>
 </html>
