@@ -7299,18 +7299,55 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
         return '<tr><td>'+s+'</td><td>'+prof(s)+'</td><td>'+who+'</td><td>'+won(r.off)+'</td><td>'+won(r.on)+'</td><td>'+won(r.sg)+'</td><td><b>'+won(r.off+r.on+r.sg)+'</b></td></tr>'; }).join("")+
       '<tr class="tot"><td>합계</td><td></td><td></td><td>'+won(S.off.inst)+'</td><td>'+won(S.on.inst)+'</td><td>'+won(R.sg.inst)+'</td><td>'+won(tot("inst")+R.sg.inst)+'</td></tr></tbody></table></div>';
   }
-  /* 중도 해지 환불: 시작 전(0일) 전액 · 시작 후 정가 ÷ 30일 × 이용일수를 빼고 반환 (하루라도 이용하면 1일) */
+  /* 환불 접수 — 관리반: 시작 전(0일) 전액 · 시작 후 정가 ÷ 30일 × 이용일수 공제 (하루라도 이용하면 1일)
+     온라인 단과: 재생 50% 초과 목차는 들은 것으로 보고, 나머지 목차 × 목차 가격 환불 */
+  const LKEY="g5_refund_ledger";
+  function esc(x){ return String(x==null?'':x).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function ldLoad(){ try{ const v=JSON.parse(localStorage.getItem(LKEY)||"[]"); return Array.isArray(v)?v:[]; }catch(e){ return []; } }
+  function ldSave(a){ try{ localStorage.setItem(LKEY,JSON.stringify(a)); }catch(e){} }
+  function gv(id){ const e=document.getElementById(id); return e?e.value:""; }
+  function gn(id){ return Math.max(0,Math.floor(+gv(id)||0)); }
+  function rfCompute(){
+    const t=gv("rfT")||"off";
+    if(t==="dan"){ const b=gn("rfSb"), w=Math.min(b,gn("rfSw")), p=gn("rfSp"), back=(b-w)*p;
+      return {t:t,subj:gv("rfSj"),bought:b,watched:w,price:p,paid:b*p,back:back,keep:w*p,
+        txt:b?('안 들은 목차 '+(b-w)+'강 × '+won(p)+'원 → <b>'+won(back)+'원 환불</b> · 들은 '+w+'강('+won(w*p)+'원)은 학원 '+((C.single||{}).ratio||[7,3]).join(' : 강사 ')+'로 정산'):'결제 목차 수를 넣으면 계산합니다'}; }
+    const paid=gn("rfPaid"), d=gn("rfDays"), daily=Math.round(((C.list||{})[t]||0)/30), used=d*daily, back=d===0?paid:Math.max(0,paid-used);
+    return {t:t,paid:paid,days:d,back:back,keep:paid-back,
+      txt:d===0?'교습 시작 전 해지 → <b>전액 '+won(paid)+'원 환불</b>':'하루 '+won(daily)+'원 × '+d+'일 = '+won(used)+'원 이용 → <b>'+won(back)+'원 환불</b>'+(back===0?' (환불 없음)':'')+' · 잔액 '+won(paid-back)+'원은 정산에 포함'};
+  }
   function refundCalc(){
     const o=document.getElementById("rfOut"); if(!o) return;
-    const t=(document.getElementById("rfT")||{}).value||"off", paid=Math.max(0,+((document.getElementById("rfPaid")||{}).value)||0), d=Math.max(0,Math.ceil(+((document.getElementById("rfDays")||{}).value)||0));
-    const daily=Math.round(((C.list||{})[t]||0)/30), used=d*daily, back=d===0?paid:Math.max(0,paid-used);
-    o.innerHTML=d===0?'교습 시작 전 해지 → <b>전액 '+won(paid)+'원 환불</b>':'하루 '+won(daily)+'원 × '+d+'일 = '+won(used)+'원 이용 → <b>'+won(back)+'원 환불</b>'+(back===0?' (환불 없음)':'');
+    const dan=gv("rfT")==="dan"; document.querySelectorAll(".rfMgr").forEach(function(e){ e.style.display=dan?"none":""; }); document.querySelectorAll(".rfDan").forEach(function(e){ e.style.display=dan?"":"none"; });
+    const r=rfCompute(); o.innerHTML=r.txt; const a=document.getElementById("rfAmt"); if(a) a.textContent=won(r.back)+"원";
   }
-  /* 온라인 단과: 목차 단위 — 재생 50% 초과한 목차는 '들은 목차'로 보고 환불 제외, 나머지 목차만 목차 가격으로 환불 */
-  function refundSingle(){
-    const o=document.getElementById("rfSOut"); if(!o) return;
-    const g=function(id){ return Math.max(0,Math.floor(+((document.getElementById(id)||{}).value)||0)); }, b=g("rfSb"), w=Math.min(b,g("rfSw")), p=g("rfSp"), back=(b-w)*p;
-    o.innerHTML=b?('안 들은 목차 '+(b-w)+'강 × '+won(p)+'원 → <b>'+won(back)+'원 환불</b> · 들은 '+w+'강('+won(w*p)+'원)은 학원 '+((C.single||{}).ratio||[7,3]).join(' : 강사 ')+'로 정산'):'결제 목차 수를 넣으면 계산합니다';
+  function refundSingle(){}
+  const TN={off:"오프라인 관리반",on:"온라인 관리반",dan:"온라인 단과"};
+  function ldRender(){
+    const box=document.getElementById("rfLedger"); if(!box) return;
+    const L=ldLoad(), ym=new Date().toISOString().slice(0,7);
+    box.innerHTML=L.length?'<div class="scroll"><table><thead><tr><th>접수일</th><th>유형</th><th>신청자</th><th>연락처</th><th>환불 계좌</th><th>환불액</th><th>잔액(정산)</th><th>상태</th><th></th></tr></thead><tbody>'+
+      L.map(function(x,i){ return '<tr'+(x.at.slice(0,7)===ym?'':' style="opacity:.6"')+'><td>'+x.at.slice(5,10).replace("-","/")+'</td><td>'+TN[x.t]+(x.t==="dan"?' <small style="color:var(--mute)">'+esc(x.subj||"")+'</small>':'')+'</td><td>'+esc(x.name)+'</td><td>'+esc(x.phone)+'</td><td>'+esc(x.bank)+' '+esc(x.acct)+' <small style="color:var(--mute)">('+esc(x.holder)+')</small></td><td><b>'+won(x.back)+'</b></td><td>'+won(x.keep)+'</td>'+
+        '<td><button type="button" class="mini" data-ldst="'+i+'" style="'+(x.done?'border-color:#5ec98f;color:#5ec98f':'border-color:#e5be44;color:#e5be44')+'">'+(x.done?'지급 완료':'접수 · 지급 대기')+'</button></td><td><button type="button" class="mini" data-lddel="'+i+'">삭제</button></td></tr>'; }).join("")+
+      '</tbody></table></div><button type="button" class="mini" id="ldApply" style="margin-top:8px">⬆ 이달 접수분을 정산에 반영 (관리반 → 중도 해지자 칸 · 단과 → 환불 목차)</button>':'<div style="font-size:.8rem;color:var(--mute)">접수된 환불이 없습니다</div>';
+    box.querySelectorAll("[data-ldst]").forEach(function(b){ b.onclick=function(){ const L=ldLoad(), x=L[+b.dataset.ldst]; x.done=!x.done; x.paidAt=x.done?new Date().toISOString():null; ldSave(L); ldRender(); }; });
+    box.querySelectorAll("[data-lddel]").forEach(function(b){ b.onclick=function(){ const L=ldLoad(); if(!confirmDel(L[+b.dataset.lddel])) return; L.splice(+b.dataset.lddel,1); ldSave(L); ldRender(); }; });
+    const ap=document.getElementById("ldApply"); if(ap) ap.onclick=function(){
+      const L=ldLoad().filter(function(x){ return x.at.slice(0,7)===ym; }), rk={off:{n:0,amt:0},on:{n:0,amt:0}}, ref={};
+      L.forEach(function(x){ if(x.t==="dan"){ ref[x.subj]=(ref[x.subj]||0)+(x.bought-x.watched); } else { rk[x.t].n++; rk[x.t].amt+=x.keep; } });
+      [["sKn_off",rk.off.n],["sKa_off",rk.off.amt],["sKn_on",rk.on.n],["sKa_on",rk.on.amt]].forEach(function(p){ const e=document.getElementById(p[0]); if(e) e.value=p[1]; });
+      subjects().forEach(function(sj){ const e=document.getElementById("sSF_"+sj); if(e) e.value=ref[sj]||0; });
+      read(); toast("이달 환불 접수 "+L.length+"건을 정산에 반영했습니다");
+    };
+  }
+  function confirmDel(x){ return !!x; }
+  function ldAdd(){
+    const err=document.getElementById("rfErr"), r=rfCompute(), f={name:gv("rfNm").trim(),phone:gv("rfPh").trim(),bank:gv("rfBk").trim(),acct:gv("rfAc").trim(),holder:gv("rfHd").trim()};
+    if(!f.name||!f.phone||!f.bank||!f.acct||!f.holder){ err.textContent="신청자 · 연락처 · 은행 · 계좌번호 · 예금주를 모두 넣어 주세요."; return; }
+    if(r.t==="dan"?!r.bought:!r.paid){ err.textContent=r.t==="dan"?"결제 목차 수를 넣어 주세요.":"낸 금액을 넣어 주세요."; return; }
+    err.textContent=""; const L=ldLoad(); L.unshift(Object.assign({at:new Date().toISOString(),done:false},f,r,{txt:undefined})); ldSave(L);
+    ["rfNm","rfPh","rfBk","rfAc","rfHd"].forEach(function(id){ const e=document.getElementById(id); if(e) e.value=""; });
+    ldRender(); toast(f.name+"님 환불 "+won(r.back)+"원 접수");
   }
   window.g5RefundCalc=refundCalc;
   function inputs(){
@@ -7340,14 +7377,29 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
         '<div class="srow">학원 : 강사<span>'+n("sSR0",((C.single||{}).ratio||[7,3])[0])+' : '+n("sSR1",((C.single||{}).ratio||[7,3])[1])+'</span></div>'+
         '<div class="srow" style="color:var(--mute);font-size:.74rem">과목<span>목차당 가격 × (판매 목차 − 환불 목차) = 단과 매출</span></div>'+
         subjects().map(function(s){ const sg=C.single||{}; return '<div class="srow">'+s+' <small style="color:var(--mute)">'+cat(s)+'강</small><span>'+n("sSP_"+s,((sg.price||{})[s])||0,500)+'원 × '+n("sSC_"+s,((sg.cnt||{})[s])||0)+'강 − 환불 '+n("sSF_"+s,((sg.ref||{})[s])||0)+'강 = <b style="min-width:80px;display:inline-block;text-align:right">'+won((+((sg.price||{})[s]||0))*Math.max(0,(+((sg.cnt||{})[s]||0))-(+((sg.ref||{})[s]||0))))+'원</b></span></div>'; }).join("")+'</div>'+
-      '<div class="sbox"><h4>🧾 중도 해지 환불 계산</h4>'+
-        '<div class="srow">관리반<select id="rfT"><option value="off">오프라인</option><option value="on">온라인</option></select></div>'+
-        '<div class="srow">낸 금액 (이번 달)'+n("rfPaid",C.fee.off,10000)+'</div>'+
-        '<div class="srow">이용 일수 (하루라도 이용하면 1일)'+n("rfDays",0)+'</div>'+
-        '<div class="srow" style="font-size:.86rem"><span id="rfOut" style="white-space:normal"></span></div>'+
-        '<div class="srow" style="margin-top:8px;border-top:1px dashed var(--line);padding-top:8px">온라인 단과 — 결제 목차<span>'+n("rfSb",0)+'강 · 들은 목차 '+n("rfSw",0)+'강 · 목차당 '+n("rfSp",9000,500)+'원</span></div>'+
-        '<div class="srow" style="font-size:.86rem"><span id="rfSOut" style="white-space:normal"></span></div>'+
-        '<div style="font-size:.72rem;color:var(--mute);line-height:1.6">여기서 나온 <b>이용 공제액이 잔액</b>입니다 — 위 [중도 해지자] 칸에 인원과 함께 더해 넣으면, 현 이용자 매출에 합쳐 관리비(·오프라인은 임대료)를 떼고 원래 비율로 정산됩니다 (직렬별 인원에는 넣지 않음) · 단과는 <b>재생 50%를 넘긴 목차</b>를 들은 것으로 보고, 나머지 목차만 목차 가격으로 환불합니다 · 교습 시작 전 해지는 전액 환불 · 시작 후에는 <b>정가(월) ÷ 30일</b>을 하루 비용으로 보고, 이용한 날만큼 빼고 돌려줍니다 (할인가가 아닌 정가 기준 · 상인고시시장 방식)</div></div>'+
+      '<div class="sbox" style="grid-column:1/-1"><h4>🧾 중도 해지 환불 접수</h4>'+
+        '<div class="sgrid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:4px 18px">'+
+        '<div>'+
+        '<div class="srow">수강 유형<select id="rfT"><option value="off">오프라인 관리반</option><option value="on">온라인 관리반</option><option value="dan">온라인 단과</option></select></div>'+
+        '<div class="srow rfMgr">낸 금액 (이번 달)'+n("rfPaid",C.fee.off,10000)+'</div>'+
+        '<div class="srow rfMgr">이용 일수 (하루라도 이용하면 1일)'+n("rfDays",0)+'</div>'+
+        '<div class="srow rfDan" style="display:none">과목<select id="rfSj">'+subjects().map(function(sj){ return '<option>'+sj+'</option>'; }).join("")+'</select></div>'+
+        '<div class="srow rfDan" style="display:none">결제 목차'+n("rfSb",0)+'</div>'+
+        '<div class="srow rfDan" style="display:none">들은 목차 (재생 50% 초과)'+n("rfSw",0)+'</div>'+
+        '<div class="srow rfDan" style="display:none">목차당 가격'+n("rfSp",9000,500)+'</div>'+
+        '<div class="srow" style="font-size:.86rem;background:rgba(232,185,60,.08);border-radius:8px;padding:8px 10px;margin-top:6px"><span id="rfOut" style="white-space:normal"></span></div>'+
+        '<div class="srow" style="font-size:1rem;font-weight:900">환불액<b id="rfAmt" style="color:var(--gold)">0원</b></div>'+
+        '</div><div>'+
+        '<div class="srow">환불 신청자<input type="text" id="rfNm" placeholder="이름" maxlength="20" style="width:150px"></div>'+
+        '<div class="srow">연락처<input type="tel" id="rfPh" placeholder="010-0000-0000" maxlength="13" style="width:150px"></div>'+
+        '<div class="srow">환불 계좌 — 은행<input type="text" id="rfBk" placeholder="예: 국민" maxlength="20" style="width:150px"></div>'+
+        '<div class="srow">계좌번호<input type="text" id="rfAc" placeholder="숫자와 - 만" maxlength="30" inputmode="numeric" style="width:150px"></div>'+
+        '<div class="srow">예금주<input type="text" id="rfHd" placeholder="이름" maxlength="20" style="width:150px"></div>'+
+        '<div class="gerr" id="rfErr" style="color:#c0392b;font-size:.78rem;min-height:16px"></div>'+
+        '<button type="button" class="mini" id="rfAdd" style="border-color:var(--gold);color:var(--gold);font-weight:800">환불 접수 등록 →</button>'+
+        '</div></div>'+
+        '<h4 style="margin:14px 0 6px">환불 접수 대장</h4><div id="rfLedger"></div>'+
+        '<div style="font-size:.72rem;color:var(--mute);line-height:1.6;margin-top:6px">관리반: 교습 시작 전 해지는 전액 환불 · 시작 후에는 <b>정가(월) ÷ 30일</b>(오프라인 30,000원 · 온라인 24,000원)을 이용일수만큼 빼고 환불 · 남은 <b>잔액은 현 이용자 매출에 더해</b> 관리비(·오프라인은 임대료)를 떼고 원래 비율로 정산 · 온라인 단과: <b>재생 50%를 넘긴 목차</b>는 들은 것으로 보고 나머지 목차만 목차 가격으로 환불 · 계좌 정보는 지금 이 브라우저에만 저장되며, 서버 연결 후 관리자만 볼 수 있는 곳으로 옮깁니다</div></div>'+
       '</div><div id="g5SetOut"></div>'+
       '<div class="note">· 오프라인 관리반은 인강을 무료로 열지만 강사 수강료는 실강 기준으로만 나눕니다 · 온라인 관리반은 인강 기준입니다<br>· 1차(PSAT·헌법) 강의가 아직 없어 1차 강사 몫은 0으로 계산됩니다 — 강의가 들어오면 함께 배분됩니다<br>· 재등록 환불은 재등록한 달의 매출에서 빼서 처리합니다 · 장학 응시권은 수강료 정산에 영향이 없습니다<br>· 임대료는 독서실·관리공간을 쓰는 오프라인 관리반에서만 뺍니다 · 온라인 관리반은 관리비만 뺍니다<br>· 온라인 단과는 목차(강의 1강) 단위로 결제합니다 — 단과 매출 = 목차당 가격 × 판매 목차 수 · 지금은 목차당 9,000원(회당 27,000원 ÷ 3강)으로 계산하며, 목차 중요도에 따른 가격 차등은 나중에 정합니다 · 관리비·임대료 없이 학원 7 : 강사 3으로 나누고, 판 과목 강사에게 바로 돌아갑니다 · 오프라인 단과는 없습니다<br>· 관리반 수강료 근거: 오프라인 실강 단과 회당 27,000원 × 19회 ≈ 51만원 + 관리 투입 비용(관리 인력·독서실 공간) ≈ 19만원 = 월 70만원 · 온라인은 관리 공간이 없어 56만원 · 오프라인 단과의 학원 5 : 강사 5는 학원 기존 방식이며 관리반 정산에는 넣지 않습니다<br>· 비율·관리비·임대료·수강료·단과 매출은 모두 예시값이며 이 브라우저에 저장됩니다 (서버 연결 후 운영 설정으로 옮김)</div>';
     return h;
@@ -7373,6 +7425,7 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
     const anchor=document.getElementById("ccAppPanel")||wrap.querySelector(".panel");
     if(anchor&&anchor.parentNode) anchor.parentNode.insertBefore(pn,anchor); else wrap.appendChild(pn);
     bind(pn); render();
+    const ad=document.getElementById("rfAdd"); if(ad) ad.onclick=ldAdd; ldRender();
   }
   window.g5SettleMount=mount;
   const oO=window.ccOpenAdmin;
