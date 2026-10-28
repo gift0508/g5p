@@ -7166,10 +7166,10 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
 </style>
 <script>
 (function(){
-  const KEY="g5_settle_cfg2";
+  const KEY="g5_settle_cfg4";
   const DEF={
-    fee:{off:700000,on:700000}, mgmt:60000, rent:3000000,
-    ratio:{off:[4,4,2],on:[4,3,3]},          /* 학원 : 강사 : 운영자 */
+    fee:{off:700000,on:560000}, mgmt:60000, rent:3000000,
+    ratio:{off:[4,4,2],on:[5,3,2]},          /* 학원 : 강사 : 운영자 */
     basis:"mix", mix:70,
     N:{"일반행정":{off:12,on:30},"인사조직":{off:3,on:8},"재경":{off:6,on:15},"교육행정":{off:2,on:5}},
     H:{}                                     /* 과목별 1인 평균 시간 {과목:{off:실강 출석, on:인강 재생}} — 비면 카탈로그 비중과 같게 */
@@ -7187,14 +7187,15 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
   function calc(){
     const res={}, sum={off:{sales:0,mgmt:0,rent:0,pool:0,acad:0,inst:0,me:0,n:0},on:{sales:0,mgmt:0,rent:0,pool:0,acad:0,inst:0,me:0,n:0}};
     /* 임대료(월 고정비)는 관리반 전체가 함께 부담 — 각 직렬·유형 매출 비중대로 나눠 관리비와 함께 먼저 뺌 */
-    let allBase=0; J().forEach(function(j){ ["off","on"].forEach(function(t){ const n=+((C.N[j[0]]||{})[t]||0); allBase+=n*Math.max(0,(+C.fee[t]||0)-(+C.mgmt||0)); }); });
-    const rentAll=+C.rent||0, deficit=allBase<rentAll;   /* 인원이 모자라 (매출 − 관리비)가 임대료보다 작으면 적자 → 배분할 금액 없음 */
+    /* 임대료(월 고정비)는 독서실·관리공간을 쓰는 오프라인 관리반에서만 뺌 · 온라인 관리반은 관리비만 뺌 */
+    let offBase=0; J().forEach(function(j){ const n=+((C.N[j[0]]||{}).off||0); offBase+=n*Math.max(0,(+C.fee.off||0)-(+C.mgmt||0)); });
+    const rentAll=+C.rent||0, deficit=offBase<rentAll;   /* 오프라인 인원이 모자라 (매출 − 관리비)가 임대료보다 작으면 오프라인 적자 → 실강분 배분 없음 */
     subjects().forEach(function(s){ res[s]={off:0,on:0}; });
     J().forEach(function(j){
       const subs=BASE().concat([j[1]]);
       ["off","on"].forEach(function(t){
         const n=+((C.N[j[0]]||{})[t]||0), fee=+C.fee[t]||0, R=C.ratio[t], rs=(+R[0]||0)+(+R[1]||0)+(+R[2]||0)||1;
-        const sales=n*fee, mg=Math.min(sales,n*(+C.mgmt||0)), base=sales-mg, rt=allBase?rentAll*base/allBase:0, pool=deficit?0:base-rt;
+        const sales=n*fee, mg=Math.min(sales,n*(+C.mgmt||0)), base=sales-mg, rt=(t==="off"&&offBase)?rentAll*base/offBase:0, pool=(t==="off")?(deficit?0:base-rt):base;
         const S=sum[t]; S.n+=n; S.sales+=sales; S.mgmt+=mg; S.rent+=rt; S.pool+=pool;
         S.acad+=pool*(+R[0]||0)/rs; S.me+=pool*(+R[2]||0)/rs; const inst=pool*(+R[1]||0)/rs; S.inst+=inst;
         const cw=subs.map(cat), ct=cw.reduce(function(a,b){ return a+b; },0)||1;
@@ -7205,7 +7206,7 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
         });
       });
     });
-    return {res:res,sum:sum,deficit:deficit,net:allBase-rentAll};
+    return {res:res,sum:sum,deficit:deficit,net:offBase-rentAll};
   }
   function render(){
     const pn=document.getElementById("g5Settle"); if(!pn) return;
@@ -7215,20 +7216,22 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
       '<div class="kp">'+
         '<div><span>이달 관리반 매출 ('+(S.off.n+S.on.n)+'명)</span><b>'+man(tot("sales"))+'원</b></div>'+
         '<div><span>관리비 선공제 (1인 '+won(C.mgmt)+'원)</span><b>'+man(tot("mgmt"))+'원</b></div>'+
-        '<div><span>임대료 선공제 (월 고정비)</span><b>'+man(+C.rent||0)+'원</b></div>'+
-        '<div'+(R.deficit?' style="border-color:#c0392b"':'')+'><span>정산 대상 금액</span><b'+(R.deficit?' style="color:#c0392b"':'')+'>'+(R.deficit?'적자 − '+man(-R.net):man(tot("pool")))+'원</b></div>'+
+        '<div><span>임대료 (월 고정비 · 오프라인만)</span><b>'+man(+C.rent||0)+'원</b></div>'+
+        '<div><span>정산 대상 금액 (배분할 금액)</span><b>'+man(tot("pool"))+'원</b></div>'+
         (function(){ const be=function(t){ const m=(+C.fee[t]||0)-(+C.mgmt||0); return m>0?Math.ceil((+C.rent||0)/m):'—'; };
-          return '<div><span>손익분기 인원 (임대료를 넘기는 최소 인원)</span><b>오프만 '+be("off")+'명 · 온만 '+be("on")+'명</b></div>'; })()+
+          return '<div'+(R.deficit?' style="border-color:#c0392b"':'')+'><span>오프라인 손익분기 인원 (임대료를 넘기는 최소 인원)</span><b'+(R.deficit?' style="color:#c0392b"':'')+'>'+be("off")+'명 · 지금 '+S.off.n+'명</b></div>'; })()+
         '<div><span>학원 몫</span><b>'+man(tot("acad"))+'원</b></div>'+
         '<div><span>강사 몫 (아래 표 합계)</span><b>'+man(tot("inst"))+'원</b></div>'+
         '<div class="me"><span>운영자 몫</span><b>'+man(tot("me"))+'원</b></div>'+
       '</div>'+
-      (R.deficit?'<div style="margin-top:12px;padding:10px 12px;border:1px solid #c0392b;border-radius:10px;color:#c0392b;font-size:.84rem">⚠ 이달 인원으로는 (매출 − 관리비)가 임대료 '+won(+C.rent||0)+'원에 못 미칩니다 — <b>적자 '+won(-R.net)+'원</b> · 학원·강사·운영자에게 나눌 금액이 없습니다</div>':'')+
+      (R.deficit?'<div style="margin-top:12px;padding:10px 12px;border:1px solid #c0392b;border-radius:10px;color:#c0392b;font-size:.84rem">⚠ 이달 오프라인 인원으로는 (매출 − 관리비)가 임대료 '+won(+C.rent||0)+'원에 못 미칩니다 — <b>오프라인 적자 '+won(-R.net)+'원</b> · 실강분은 나눌 금액이 없습니다 (온라인 관리반 정산은 그대로)</div>':'')+
       '<div class="scroll" style="margin-top:12px"><table><thead><tr><th>정산 대상 계산</th><th>인원</th><th>매출</th><th>관리비</th><th>소계</th></tr></thead><tbody>'+
-      [["off","오프라인 관리반"],["on","온라인 관리반"]].map(function(x){ const s=S[x[0]];
-        return '<tr><td>'+x[1]+'</td><td>'+s.n+'명</td><td>'+won(s.sales)+'</td><td>− '+won(s.mgmt)+'</td><td>'+won(s.sales-s.mgmt)+'</td></tr>'; }).join("")+
-      '<tr><td>임대료 (월 고정비)</td><td></td><td></td><td></td><td>− '+won(+C.rent||0)+'</td></tr>'+
-      '<tr class="tot"><td>정산 대상 금액</td><td>'+(S.off.n+S.on.n)+'명</td><td>'+won(tot("sales"))+'</td><td>− '+won(tot("mgmt"))+'</td><td'+(R.deficit?' style="color:#c0392b"':'')+'>'+(R.deficit?'− '+won(-R.net)+' (적자)':won(tot("pool")))+'</td></tr></tbody></table></div>'+
+      '<tr><td>오프라인 관리반</td><td>'+S.off.n+'명</td><td>'+won(S.off.sales)+'</td><td>− '+won(S.off.mgmt)+'</td><td>'+won(S.off.sales-S.off.mgmt)+'</td></tr>'+
+      '<tr><td>&nbsp;&nbsp;└ 임대료 (월 고정비 · 오프라인만)</td><td></td><td></td><td></td><td>− '+won(+C.rent||0)+'</td></tr>'+
+      '<tr><td>&nbsp;&nbsp;= 오프라인 정산 대상</td><td></td><td></td><td></td><td'+(R.deficit?' style="color:#c0392b"':'')+'>'+(R.deficit?'− '+won(-R.net)+' (적자)':won(S.off.pool))+'</td></tr>'+
+      '<tr><td>온라인 관리반 <small style="color:var(--mute)">· 임대료 없음</small></td><td>'+S.on.n+'명</td><td>'+won(S.on.sales)+'</td><td>− '+won(S.on.mgmt)+'</td><td>'+won(S.on.pool)+'</td></tr>'+
+      ''+
+      '<tr class="tot"><td>정산 대상 금액 (배분할 금액)</td><td>'+(S.off.n+S.on.n)+'명</td><td>'+won(tot("sales"))+'</td><td>− '+won(tot("mgmt"))+'</td><td>'+won(tot("pool"))+'</td></tr></tbody></table></div>'+
       '<div class="scroll" style="margin-top:12px"><table><thead><tr><th>배분</th><th>정산 대상</th><th>학원</th><th>강사</th><th>운영자</th></tr></thead><tbody>'+
       [["off","실강분 (오프라인 "+C.ratio.off.join(":")+")"],["on","인강분 (온라인 "+C.ratio.on.join(":")+")"]].map(function(x){ const s=S[x[0]];
         return '<tr><td>'+x[1]+'</td><td>'+won(s.pool)+'</td><td>'+won(s.acad)+'</td><td>'+won(s.inst)+'</td><td>'+won(s.me)+'</td></tr>'; }).join("")+
@@ -7242,13 +7245,13 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
   function inputs(){
     const n=function(id,v,step){ return '<input type="number" id="'+id+'" value="'+v+'" min="0" step="'+(step||1)+'">'; };
     let h='<h3>💰 강사 수강료 정산 <span class="ex">예시값 · 모의 정산</span></h3>'+
-      '<div class="sub"><b>관리비(수강생 1인당) + 임대료(월 고정비)</b>를 먼저 떼고, 남은 금액을 실강·인강별로 <b>학원 : 강사 : 운영자</b> 비율로 나눕니다 · 강사 몫은 그 직렬 과목 강사에게 배분합니다 · 서버 연결 전이라 인원·시간을 직접 넣어 계산합니다</div>'+
+      '<div class="sub"><b>관리비(수강생 1인당)</b>를 먼저 떼고 <b>오프라인은 임대료(월 고정비)</b>도 뗀 뒤, 남은 금액을 실강·인강별로 <b>학원 : 강사 : 운영자</b> 비율로 나눕니다 · 강사 몫은 그 직렬 과목 강사에게 배분합니다 · 서버 연결 전이라 인원·시간을 직접 넣어 계산합니다</div>'+
       '<div class="sgrid">'+
       '<div class="sbox"><h4>수강료 · 관리비</h4>'+
         '<div class="srow">오프라인 관리반 월 수강료'+n("sF_off",C.fee.off,10000)+'</div>'+
-        '<div class="srow">온라인 관리반 월 수강료'+n("sF_on",C.fee.on,10000)+'</div>'+
+        '<div class="srow">온라인 관리반 월 수강료 <small style="color:var(--mute)">· 오프라인의 80% (독서실·관리공간 이용 없음)</small>'+n("sF_on",C.fee.on,10000)+'</div>'+
         '<div class="srow">관리비 (1인당 선공제)'+n("sMg",C.mgmt,5000)+'</div>'+
-        '<div class="srow">임대료 (월 고정비 · 공동 선공제)'+n("sRent",C.rent==null?0:C.rent,100000)+'</div></div>'+
+        '<div class="srow">임대료 (월 고정비 · 오프라인만 공제)'+n("sRent",C.rent==null?0:C.rent,100000)+'</div></div>'+
       '<div class="sbox ratio"><h4>배분 비율 — 학원 : 강사 : 운영자</h4>'+
         '<div class="srow">실강 (오프라인)<span>'+n("sR_off0",C.ratio.off[0])+' : '+n("sR_off1",C.ratio.off[1])+' : '+n("sR_off2",C.ratio.off[2])+'</span></div>'+
         '<div class="srow">인강 (온라인)<span>'+n("sR_on0",C.ratio.on[0])+' : '+n("sR_on1",C.ratio.on[1])+' : '+n("sR_on2",C.ratio.on[2])+'</span></div>'+
@@ -7259,7 +7262,7 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
       '<div class="sbox"><h4>과목별 1인 평균 시간 <small style="color:var(--mute);font-weight:500">(실제 수강 비중용 · 비우면 강의 수 비중)</small></h4>'+
         subjects().map(function(s){ const v=C.H[s]||{}; return '<div class="srow">'+s+' <small style="color:var(--mute)">'+cat(s)+'강</small><span>실강 <input type="number" id="sH_off_'+s+'" value="'+(v.off==null?"":v.off)+'" min="0" placeholder="—"> 인강 <input type="number" id="sH_on_'+s+'" value="'+(v.on==null?"":v.on)+'" min="0" placeholder="—"></span></div>'; }).join("")+'</div>'+
       '</div><div id="g5SetOut"></div>'+
-      '<div class="note">· 오프라인 관리반은 인강을 무료로 열지만 강사 수강료는 실강 기준으로만 나눕니다 · 온라인 관리반은 인강 기준입니다<br>· 1차(PSAT·헌법) 강의가 아직 없어 1차 강사 몫은 0으로 계산됩니다 — 강의가 들어오면 함께 배분됩니다<br>· 재등록 환불은 재등록한 달의 매출에서 빼서 처리합니다 · 장학 응시권은 수강료 정산에 영향이 없습니다<br>· 임대료는 월 고정비로 전체 금액에서 한 번 뺍니다 — 실강분·인강분은 임대료를 뺀 정산 대상 금액을 두 관리반의 (매출 − 관리비) 비중대로 나눈 것입니다<br>· 비율·관리비·임대료·수강료는 모두 예시값이며 이 브라우저에 저장됩니다 (서버 연결 후 운영 설정으로 옮김)</div>';
+      '<div class="note">· 오프라인 관리반은 인강을 무료로 열지만 강사 수강료는 실강 기준으로만 나눕니다 · 온라인 관리반은 인강 기준입니다<br>· 1차(PSAT·헌법) 강의가 아직 없어 1차 강사 몫은 0으로 계산됩니다 — 강의가 들어오면 함께 배분됩니다<br>· 재등록 환불은 재등록한 달의 매출에서 빼서 처리합니다 · 장학 응시권은 수강료 정산에 영향이 없습니다<br>· 임대료는 독서실·관리공간을 쓰는 오프라인 관리반에서만 뺍니다 · 온라인 관리반은 관리비만 뺍니다<br>· 비율·관리비·임대료·수강료는 모두 예시값이며 이 브라우저에 저장됩니다 (서버 연결 후 운영 설정으로 옮김)</div>';
     return h;
   }
   function bind(pn){
