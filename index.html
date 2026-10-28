@@ -4314,7 +4314,7 @@ window.CC_DIAG_OFF=true;
 /* 강사 (학원 학습커리큘럼) */
 window.CC_PROF={"1차":{"언어논리":"미정","자료해석":"미정","상황판단":"미정","헌법":"미정"},
                 "2차":{"행정법":"미정","경제학":"황종휴","행정학":"미정","정치학":"미정","재정학":"미정","교육학":"미정"}};
-var NM_BASE2=["행정법","행정학","경제학"];
+var NM_BASE2=["경제학","행정법","행정학"];
 window.CC_OPT={"2차":["정치학","재정학","교육학"]};
 window.CC_ADMIN_LAWS2=NM_BASE2.concat(window.CC_OPT["2차"]);  /* 관제실: 2차 선택과목 둘 다 열로 */
 /* 단계 — 학원 학습커리큘럼 순서 · 1차: 입문 → 기본 → 문제풀이 → 테마특강 → 핵지총특강(2026-10-22 추가) → 기출 (1차에는 파이널특강 없음 · 2026-10-20 확인)
@@ -7002,7 +7002,7 @@ window.g5Btns=function(o,day,a,hasNote){
   document.addEventListener("keydown",function(e){ if(e.key==="Escape") close(); });
   function learn(){ try{ return (JSON.parse(localStorage.getItem("cc_learnlog")||"{}")||{}).s||{}; }catch(e){ return {}; } }
   function laws2(){
-    let L=["행정법","행정학","경제학"]; try{
+    let L=["경제학","행정법","행정학"]; try{
       const p=(ccTrackSaved("2차").path)||{}; (CC_OPT["2차"]||[]).forEach(function(o){ if(p[o]&&p[o]!=="skip") L.push(o); });
     }catch(e){}
     return L;
