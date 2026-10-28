@@ -7,8 +7,9 @@
 <script>
 /* ===== 특별관리반 서버 연결 설정 (careclass · Supabase) ===== */
 window.CC={
-  url:"https://dckovcfyzpalfjpzvpvd.supabase.co",
-  key:"sb_publishable_47jglo9SRylFfTQ3kN9LaQ_Y9p0Eong",
+  /* 5급 전용 서버를 만들기 전까지 연결 끊음 (노무사 케길반 서버 데이터와 섞이지 않게) — 새 서버 주소·키를 여기에 넣으면 다시 연결됩니다 */
+  url:"",
+  key:"",
   domain:"careclass.local",          /* 아이디 → 내부 로그인 주소(메일 발송 없음) */
   adminCode:"g5p",
   ns:"g5__",                          /* 이 기기 저장 공간 구분 (같은 github.io 주소의 다른 사이트와 섞이지 않게) */
@@ -736,7 +737,7 @@ border-radius:999px;padding:4px 12px;font-size:.7rem;cursor:pointer;font-family:
   <div class="gatecard">
     <div class="gbrand">5급공채특별관리반</div>
     <div class="gsub">합격까지 함께하는 24h 관리 동반자 · 수강생 로그인</div>
-    <div style="font-size:10.5px;color:#8a8578;margin-top:4px;letter-spacing:.5px">BUILD v2026-10-19 · 5급공채 빌드 1 · 서버 careclass-nomusa</div>
+    <div style="font-size:10.5px;color:#8a8578;margin-top:4px;letter-spacing:.5px">BUILD v2026-10-28 · 5급공채 빌드 1 · 서버 연결 전 (test01 점검용)</div>
     <div id="gLogin">
       <label class="gl2">아이디</label>
       <input id="fId" type="text" placeholder="발급받은 아이디" maxlength="60" autocomplete="username" autocapitalize="off" spellcheck="false" onkeydown="if(event.key==='Enter')document.getElementById('fPw').focus()">
@@ -1031,7 +1032,7 @@ border-radius:999px;padding:4px 12px;font-size:.7rem;cursor:pointer;font-family:
 
   <footer>
     본 화면은 수험생이 로그인하면 실제로 맞닥뜨리는 운영 화면입니다. 표시된 수강생·수치는 실제 데이터가 아닌 예시값이며, 엔진(출발점·들을 강의 선택하기·선택형)은 실제 구동되는 검증 자산입니다.<br>
-    5급공채특별관리반 · 제안 자료 · 2026. 8. · BUILD v2026-10-19 · 5급공채 빌드 1 · 서버 careclass-nomusa
+    5급공채특별관리반 · 제안 자료 · 2026. 8. · BUILD v2026-10-28 · 5급공채 빌드 1 · 서버 연결 전 (test01 점검용)
   </footer>
 </div>
 
@@ -1362,7 +1363,7 @@ function rebalance(){
 }
 // ---------- 로그인 · 신청 · 진도 저장 (특별관리반 서버: Supabase) ----------
 let user=null;
-const sb=(window.supabase&&window.supabase.createClient)?window.supabase.createClient(CC.url,CC.key):null;
+const sb=(CC.url&&CC.key&&window.supabase&&window.supabase.createClient)?window.supabase.createClient(CC.url,CC.key):null;
 function ccEmail(id){ id=String(id||"").trim().toLowerCase(); return id.indexOf("@")>=0?id:id+"@"+CC.domain; }
 function ccErr(e){
   const m=(e&&(e.message||e.error_description||e.msg))||String(e||"");
@@ -1473,7 +1474,7 @@ async function ccLogin(){
   const pw=document.getElementById("fPw").value||"";
   const err=document.getElementById("gerr");
   if(!id||!pw){ err.textContent="아이디와 비밀번호를 입력해 주세요."; return; }
-  if(!sb){ err.textContent="서버 연결 모듈을 불러오지 못했습니다 — 새로고침해 주세요"; return; }
+  if(!sb){ err.textContent=CC.url?"서버 연결 모듈을 불러오지 못했습니다 — 새로고침해 주세요":"5급 서버를 준비하고 있습니다 — 지금은 시험용 계정(test01)만 들어갈 수 있습니다"; return; }
   err.textContent="확인 중…";
   try{
     try{ await sb.auth.signOut({scope:"local"}); }catch(e){}
@@ -1742,7 +1743,7 @@ async function adminLogin(){
   const err=document.getElementById("gerrA");
   if(code!==CC.adminCode){ err.textContent="관리자 코드가 올바르지 않습니다"; return; }
   if(!em||!pw){ err.textContent="관리자 이메일과 비밀번호를 입력해 주세요"; return; }
-  if(!sb){ err.textContent="서버 연결 모듈을 불러오지 못했습니다 — 새로고침해 주세요"; return; }
+  if(!sb){ err.textContent=CC.url?"서버 연결 모듈을 불러오지 못했습니다 — 새로고침해 주세요":"5급 서버를 준비하고 있습니다 — 관리자 로그인은 서버 연결 후에 열립니다"; return; }
   err.textContent="확인 중…";
   try{
     try{ ccSaveState(); await ccFlush(); }catch(e){}
@@ -6947,7 +6948,7 @@ window.g5Btns=function(o,day,a,hasNote){
     try{ const b=JSON.parse(localStorage.getItem(BK)||"null"); if(b&&typeof b==="object"){ Object.keys(b).forEach(function(k){ localStorage.setItem(k,b[k]); }); } }catch(e){}
     document.getElementById("fPw").value=""; if(err) err.textContent="";
     window.ccTester=true; ccUid=null;
-    applyUser({name:"테스터",type:"직장 병행",round:"",exp1:"처음",exp2:"처음",track:"1+2차",plan:"full",id:"test01",login_id:TID});
+    applyUser({name:"김과장",type:"직장 병행",round:"",exp1:"처음",exp2:"처음",track:"1+2차",plan:"full",id:"test01",login_id:TID});
     try{ ccPlanStart(); }catch(e){}
     toast("시험용 계정으로 들어왔습니다 — 기록은 이 브라우저에만 저장됩니다");
   };
@@ -7075,6 +7076,23 @@ window.g5Btns=function(o,day,a,hasNote){
   const oA=applyUser;
   applyUser=function(u){ if(u&&typeof u==="object"){ u.track="1+2차"; } return oA.apply(this,arguments); };
   window.applyUser=applyUser;
+})();
+</script>
+<script>
+/* ═══ 서버 연결 전 관리자 점검 입장 — 관리자 코드 g5p + 관리자 이메일·비밀번호 (이 브라우저 안에서만) ═══
+   ⚠ 실제 운영 전에 이 블록을 지울 것 (페이지 소스에 비밀번호가 보임) */
+(function(){
+  const oA=adminLogin;
+  adminLogin=async function(){
+    if(sb) return oA.apply(this,arguments);
+    const code=(document.getElementById("fAdmin").value||"").trim(), em=(document.getElementById("fAdminEmail").value||"").trim().toLowerCase(), pw=document.getElementById("fAdminPw").value||"", err=document.getElementById("gerrA");
+    if(code!==CC.adminCode){ err.textContent="관리자 코드가 올바르지 않습니다"; return; }
+    if(em!=="gift0508@gmail.com"||pw!=="10041004"){ err.textContent="관리자 이메일 또는 비밀번호가 맞지 않습니다"; return; }
+    err.textContent=""; document.getElementById("fAdminPw").value="";
+    try{ await ccOpenAdmin(); }catch(e){ console.warn("[관리자 점검 입장]",e); }
+    try{ toast("서버 연결 전 점검용 관리자 화면입니다 — 수강생 명부·채팅 등 서버 데이터는 비어 있습니다"); }catch(e){}
+  };
+  window.adminLogin=adminLogin;
 })();
 </script>
 </body>
