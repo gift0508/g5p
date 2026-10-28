@@ -6769,7 +6769,7 @@ function closeEngine(){
 .stbar.away .stdot{background:#e5be44;box-shadow:0 0 0 4px rgba(229,190,68,.18)}
 .stbar .stnums{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--mute,#9aa6bd);font-variant-numeric:tabular-nums;flex:1;min-width:180px}
 .stbar .stnums b{color:var(--ink,#e8ecf4);font-size:15px}
-.stbar .stbtns{display:flex;gap:8px;margin-left:auto}
+.stbar .stbtns{flex-basis:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.stbar .stbtns button{padding:8px 4px;font-size:12.5px;white-space:nowrap}
 .stbar button{font:inherit;font-size:13px;font-weight:700;padding:8px 14px;border-radius:9px;cursor:pointer;border:1px solid var(--line,#2a3a5c);background:transparent;color:var(--ink,#e8ecf4)}
 .stbar button.stleave{border-color:#e5be44;color:#e5be44}
 .stbar.away button.stleave{background:#e5be44;color:#0b1730;border-color:#e5be44}
@@ -7024,8 +7024,8 @@ window.g5Btns=function(o,day,a,hasNote){
    2차: 과목마다 40점 미만 과락 · 합격선은 해마다 선발인원에 따라 정해지는 상대평가 → 목표 평균은 운영 설정값(예시)
    1차: PSAT 3영역 40점 미만 과락 · 헌법 60점 이상 통과 · PSAT 합격선도 상대평가 → 목표 평균은 운영 설정값(예시) -->
 <style>
-.g5dx{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.g5dx button{flex:1;min-width:140px;font:inherit;font-size:13px;font-weight:800;padding:9px 12px;border-radius:10px;cursor:pointer;border:1px solid var(--gold,#C9A227);background:rgba(201,162,39,.08);color:var(--gold,#C9A227)}
+.g5dx{display:contents}
+.g5dx button{font:inherit;font-size:13px;font-weight:800;padding:8px 12px;border-radius:9px;white-space:nowrap;cursor:pointer;border:1px solid var(--gold,#C9A227);background:rgba(201,162,39,.08);color:var(--gold,#C9A227)}
 .g5dx button:hover{background:rgba(201,162,39,.18)}
 .g5dx button:focus-visible{outline:2px solid var(--gold,#C9A227);outline-offset:2px}
 #g5dModal{position:fixed;inset:0;background:rgba(5,12,26,.62);display:none;align-items:flex-start;justify-content:center;z-index:9000;overflow:auto;padding:40px 14px}
@@ -7061,7 +7061,7 @@ window.g5Btns=function(o,day,a,hasNote){
   document.addEventListener("keydown",function(e){ if(e.key==="Escape") close(); });
   function learn(){ try{ return (JSON.parse(localStorage.getItem("cc_learnlog")||"{}")||{}).s||{}; }catch(e){ return {}; } }
   function laws2(){
-    try{ if(window.g5Laws){ const G=g5Laws("2차"); if(G&&G.length) return G; } }catch(e){}
+    try{ let jk=null; try{ jk=localStorage.getItem("g5_jik"); }catch(e){} if(jk&&window.g5Laws){ const G=g5Laws("2차"); if(G&&G.length) return G; } if(!jk) return ["경제학","행정법","행정학"]; }catch(e){}
     let L=["경제학","행정법","행정학"]; try{
       const p=(ccTrackSaved("2차").path)||{}; (CC_OPT["2차"]||[]).forEach(function(o){ if(p[o]&&p[o]!=="skip") L.push(o); });
     }catch(e){}
@@ -7119,12 +7119,13 @@ window.g5Btns=function(o,day,a,hasNote){
     g5Diag1();
   };
 
-  /* 가상 강의실 안에 두 단추 */
+  /* 합격 진단 두 단추 — 공부 상태 바의 [로그아웃] 옆에 */
   function mount(){
-    const host=document.querySelector("#homeHero .classroom"); if(!host||document.getElementById("g5dx")) return;
-    const d=document.createElement("div"); d.className="g5dx"; d.id="g5dx";
-    d.innerHTML='<button type="button" onclick="g5Diag1()">🎯 1차 합격 진단 <small style="font-weight:500">PSAT · 헌법</small></button><button type="button" onclick="g5Diag2()">🎯 2차 합격 진단 <small style="font-weight:500">4과목 논술</small></button>';
-    const bar=document.getElementById("stBar"); if(bar) host.insertBefore(d,bar); else host.appendChild(d);
+    const old=document.getElementById("g5dx"); if(old&&!old.closest("#stBar")) old.remove();
+    const bt=document.querySelector("#stBar .stbtns"); if(!bt||document.getElementById("g5dx")) return;
+    const d=document.createElement("span"); d.className="g5dx"; d.id="g5dx";
+    d.innerHTML='<button type="button" onclick="g5Diag1()" title="PSAT · 헌법">🎯 1차 진단</button><button type="button" onclick="g5Diag2()" title="4과목 논술">🎯 2차 진단</button>';
+    bt.appendChild(d);
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",mount); else mount();
   setInterval(mount,2000);
@@ -7637,7 +7638,9 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
 #g5SeatAdm .g5plan{max-width:560px}
 #g5SeatAdm .g5s{height:34px;font-size:11px;cursor:pointer}
 #g5SeatAdm .g5s.sel{outline:2px solid var(--gold);outline-offset:1px}
-#g5SeatAdm .g5s[draggable=true]{cursor:grab}#g5SeatAdm .g5s.dg{opacity:.4}
+#g5SeatAdm .g5s[data-occ]{cursor:grab;touch-action:none;user-select:none}#g5SeatAdm .g5s.dg{outline:2px dashed var(--gold);outline-offset:1px;opacity:.6}
+.g5ghost{position:fixed;z-index:9999;pointer-events:none;padding:6px 10px;border-radius:8px;background:var(--gold,#C9A227);color:#0b1730;font-size:12px;font-weight:900;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+body.g5dragging,body.g5dragging *{cursor:grabbing!important;user-select:none}
 #g5SeatAdm .g5s.ov{background:rgba(232,185,60,.25);border:1px solid var(--gold);color:var(--gold)}
 #g5SeatAdm .g5sf{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:.84rem}
 #g5SeatAdm .g5sf input{padding:6px 9px;border:1px solid var(--line);border-radius:7px;background:rgba(0,0,0,.18);color:inherit;font:inherit;width:150px}
@@ -7725,7 +7728,24 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
   document.addEventListener("click",function(e){ if(e.target&&e.target.id==="stLeave") setTimeout(drawReal,50); });
 
   /* ── 관리자: 지정석 배정 (도면 반영 전 임시) ── */
-  let aView="A", sel=null, drag=null;
+  let aView="A", sel=null, drag=null, mvFrom=null, pd=null, ghost=null, justDragged=false, overTab=null;
+  /* 포인터로 끌기: 5px 넘게 움직이면 끌기 시작 → 놓은 곳이 자리면 이동/맞바꿈 · 반 탭 위에 잠시 머물면 그 반 도면으로 넘어감 */
+  document.addEventListener("pointermove",function(e){ if(!pd) return;
+    if(!ghost){ if(Math.abs(e.clientX-pd.x)+Math.abs(e.clientY-pd.y)<6) return;
+      ghost=document.createElement("div"); ghost.className="g5ghost"; ghost.textContent=pd.label; document.body.appendChild(ghost); document.body.classList.add("g5dragging"); }
+    e.preventDefault(); ghost.style.left=(e.clientX+8)+"px"; ghost.style.top=(e.clientY+8)+"px";
+    const el=document.elementFromPoint(e.clientX,e.clientY), p=document.getElementById("g5SeatAdm"); if(!p) return;
+    p.querySelectorAll(".ov").forEach(function(o){ o.classList.remove("ov"); });
+    const seat=el&&el.closest&&el.closest("#g5SeatAdm [data-k]"); if(seat) seat.classList.add("ov");
+    const tab=el&&el.closest&&el.closest("#g5SeatAdm [data-ar]");
+    if(tab&&tab.dataset.ar!==aView){ if(overTab!==tab.dataset.ar){ overTab=tab.dataset.ar; setTimeout(function(){ if(pd&&overTab===tab.dataset.ar&&aView!==overTab){ aView=overTab; admDraw(); } },350); } } else overTab=null;
+  },{passive:false});
+  document.addEventListener("pointerup",function(e){ if(!pd) return; const f=pd.from, had=!!ghost; pd=null; overTab=null;
+    if(ghost){ ghost.remove(); ghost=null; document.body.classList.remove("g5dragging"); }
+    if(!had) return; justDragged=true; setTimeout(function(){ justDragged=false; },50);
+    const el=document.elementFromPoint(e.clientX,e.clientY), seat=el&&el.closest&&el.closest("#g5SeatAdm [data-k]");
+    if(seat) moveSeat(f,{room:aView,seat:+seat.dataset.k}); else admDraw(); });
+  document.addEventListener("pointercancel",function(){ pd=null; if(ghost){ ghost.remove(); ghost=null; document.body.classList.remove("g5dragging"); } });
   function moveSeat(f,t){ if(f.room===t.room&&f.seat===t.seat) return; const A=asLoad(); A[f.room]=A[f.room]||{}; A[t.room]=A[t.room]||{};
     const a=A[f.room][f.seat], b=A[t.room][t.seat]; if(!a) return;
     A[t.room][t.seat]=Object.assign({},a,{by:"admin",at:new Date().toISOString()}); if(b) A[f.room][f.seat]=Object.assign({},b,{by:"admin",at:new Date().toISOString()}); else delete A[f.room][f.seat];
@@ -7734,22 +7754,22 @@ window.g5Go=function(t,subj){ try{ g5Track(t); }catch(e){} window.matchSubject=s
   function admDraw(){
     const p=document.getElementById("g5SeatAdm"); if(!p) return; const A=asLoad(), R=G5_ROOMS[aView]; let h="", k=0;
     for(let r=0;r<R.rows;r++){ for(let c=0;c<R.cols;c++){ if(c===R.aisle) h+='<div></div>'; k++; const a=(A[aView]||{})[k];
-      h+='<div class="g5s'+(a?' as':'')+(sel===k?' sel':'')+'" data-k="'+k+'"'+(a?' draggable="true"':'')+' title="'+aView+'반 '+k+'번'+(a?' · '+esc(a.login)+(a.by==="self"?' · 수강생이 첫 로그인 때 직접 정함':' · 관리자 배정'):'')+'">'+(a?esc(a.name)+(a.by==="self"?'✓':''):k)+'</div>'; } }
+      h+='<div class="g5s'+(a?' as':'')+(sel===k?' sel':'')+(mvFrom&&mvFrom.room===aView&&mvFrom.seat===k?' dg':'')+'" data-k="'+k+'"'+(a?' data-occ="1"':'')+' title="'+aView+'반 '+k+'번'+(a?' · '+esc(a.login)+(a.by==="self"?' · 수강생이 첫 로그인 때 직접 정함':' · 관리자 배정'):'')+'">'+(a?esc(a.name)+(a.by==="self"?'✓':''):k)+'</div>'; } }
     const a=sel?(A[aView]||{})[sel]:null;
-    p.innerHTML='<h3>🪑 실강의실 지정석 배정 <span class="ex">임시 배치 · 도면 반영 전</span></h3><div class="sub">실강생은 <b>첫 로그인 때 관리자가 알려 준 자리를 직접 눌러</b> 지정석을 정합니다(✓ 표시) · <b>자리를 옮길 때는 앉은 자리를 원하는 자리로 끌어다 놓으세요</b> (사람이 있는 자리에 놓으면 서로 맞바꿈 · 다른 반 탭 위로 끌면 그 반으로 넘어감) · 그 뒤 자리를 바꾸거나 미리 정해 줄 때는 여기서 자리를 누르고 아이디·이름을 넣으세요 · 서버 연결 전이라 이 브라우저에만 저장됩니다</div>'+
+    p.innerHTML='<h3>🪑 실강의실 지정석 배정 <span class="ex">임시 배치 · 도면 반영 전</span></h3><div class="sub">실강생은 <b>첫 로그인 때 관리자가 알려 준 자리를 직접 눌러</b> 지정석을 정합니다(✓ 표시) · <b>자리를 옮길 때는 앉은 자리를 원하는 자리로 끌어다 놓으세요</b> (사람이 있는 자리에 놓으면 서로 맞바꿈 · 다른 반 탭 위에 잠시 머물면 그 반으로 넘어감) · 끌기가 불편하면 자리를 누르고 [다른 자리로 옮기기] · 그 뒤 자리를 바꾸거나 미리 정해 줄 때는 여기서 자리를 누르고 아이디·이름을 넣으세요 · 서버 연결 전이라 이 브라우저에만 저장됩니다</div>'+
       '<div class="g5rtabs" style="margin:10px 0 8px">'+Object.keys(G5_ROOMS).map(function(r){ return '<button type="button" class="g5rtab'+(r===aView?' on':'')+'" data-ar="'+r+'">'+r+'반 <small>'+Object.keys(A[r]||{}).filter(function(x){ return A[r][x]; }).length+'석 배정</small></button>'; }).join("")+'</div>'+
       '<div class="g5front" style="max-width:560px">칠판 · 강단</div><div class="g5plan">'+h+'</div>'+
-      '<div class="g5sf">'+(sel?'<b>'+aView+'반 '+sel+'번</b> 아이디 <input id="g5aId" value="'+esc(a?a.login:"")+'" placeholder="예: test04"> 이름 <input id="g5aNm" value="'+esc(a?a.name:"")+'" placeholder="예: 홍길동"> <button type="button" class="mini" id="g5aSave" style="border-color:var(--gold);color:var(--gold)">배정</button>'+(a?' <button type="button" class="mini" id="g5aDel">비우기</button>':'')+'<span id="g5aErr" style="color:#c0392b;font-size:.78rem"></span>':'<span style="color:var(--mute)">배정할 자리를 누르세요</span>')+'</div>';
-    p.querySelectorAll("[data-ar]").forEach(function(b){ b.onclick=function(){ aView=b.dataset.ar; sel=null; admDraw(); }; });
-    p.querySelectorAll("[data-k]").forEach(function(b){ b.onclick=function(){ sel=+b.dataset.k; admDraw(); const i=document.getElementById("g5aId"); if(i) i.focus(); };
-      /* 끌어서 옮기기: 앉은 자리를 빈자리로 끌면 이동 · 다른 사람 자리로 끌면 두 사람 자리 맞바꿈 · 다른 반 탭 위에 놓으면 그 반 같은 번호로 */
-      b.ondragstart=function(e){ drag={room:aView,seat:+b.dataset.k}; try{ e.dataTransfer.setData("text/plain",aView+":"+b.dataset.k); e.dataTransfer.effectAllowed="move"; }catch(x){} b.classList.add("dg"); };
-      b.ondragend=function(){ b.classList.remove("dg"); p.querySelectorAll(".ov").forEach(function(o){ o.classList.remove("ov"); }); };
-      b.ondragover=function(e){ if(!drag) return; e.preventDefault(); b.classList.add("ov"); };
-      b.ondragleave=function(){ b.classList.remove("ov"); };
-      b.ondrop=function(e){ e.preventDefault(); b.classList.remove("ov"); if(!drag) return; moveSeat(drag,{room:aView,seat:+b.dataset.k}); drag=null; };
+      '<div class="g5sf">'+(mvFrom?'<b style="color:var(--gold)">'+esc(((asLoad()[mvFrom.room]||{})[mvFrom.seat]||{}).name||"")+' ('+mvFrom.room+'반 '+mvFrom.seat+'번)</b> — 옮겨 갈 자리를 누르세요 (사람이 있는 자리면 서로 맞바꿈 · 다른 반은 위 탭을 눌러 이동) <button type="button" class="mini" id="g5aMvNo">취소</button>':sel?'<b>'+aView+'반 '+sel+'번</b> 아이디 <input id="g5aId" value="'+esc(a?a.login:"")+'" placeholder="예: test04"> 이름 <input id="g5aNm" value="'+esc(a?a.name:"")+'" placeholder="예: 홍길동"> <button type="button" class="mini" id="g5aSave" style="border-color:var(--gold);color:var(--gold)">배정</button>'+(a?' <button type="button" class="mini" id="g5aMove">다른 자리로 옮기기</button> <button type="button" class="mini" id="g5aDel">비우기</button>':'')+'<span id="g5aErr" style="color:#c0392b;font-size:.78rem"></span>':'<span style="color:var(--mute)">배정할 자리를 누르세요</span>')+'</div>';
+    p.querySelectorAll("[data-k]").forEach(function(b){
+      b.onclick=function(){ if(justDragged){ justDragged=false; return; } const k=+b.dataset.k;
+        if(mvFrom){ const f=mvFrom; mvFrom=null; moveSeat(f,{room:aView,seat:k}); return; }
+        sel=k; admDraw(); const i=document.getElementById("g5aId"); if(i&&!b.dataset.occ) i.focus(); };
+      /* 끌어서 옮기기 (마우스 · 터치 모두) */
+      if(b.dataset.occ) b.onpointerdown=function(e){ if(e.button>0) return; pd={x:e.clientX,y:e.clientY,from:{room:aView,seat:+b.dataset.k},label:b.textContent,id:e.pointerId}; };
     });
-    p.querySelectorAll("[data-ar]").forEach(function(t){ t.ondragover=function(e){ if(!drag||t.dataset.ar===aView) return; e.preventDefault(); aView=t.dataset.ar; admDraw(); }; });
+    p.querySelectorAll("[data-ar]").forEach(function(t){ t.onclick=function(){ aView=t.dataset.ar; sel=null; admDraw(); }; });
+    const mv=document.getElementById("g5aMove"); if(mv) mv.onclick=function(){ mvFrom={room:aView,seat:sel}; admDraw(); };
+    const mc=document.getElementById("g5aMvNo"); if(mc) mc.onclick=function(){ mvFrom=null; admDraw(); };
     const sv=document.getElementById("g5aSave"); if(sv) sv.onclick=function(){ const id=(document.getElementById("g5aId").value||"").trim().toLowerCase(), nm=(document.getElementById("g5aNm").value||"").trim(), er=document.getElementById("g5aErr");
       if(!id||!nm){ er.textContent="아이디와 이름을 넣어 주세요"; return; }
       const A=asLoad(); for(const r in A){ for(const n in A[r]){ if(A[r][n]&&A[r][n].login===id&&!(r===aView&&+n===sel)){ er.textContent=id+"는 이미 "+r+"반 "+n+"번에 배정돼 있습니다 — 그 자리를 먼저 비워 주세요"; return; } } }
