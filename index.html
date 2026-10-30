@@ -8713,5 +8713,16 @@ window.G5_CUT2={"행정(일반행정:전국)":["52.83","61.48","뉴시스 2025-0
 })();
 
 </script>
+<script>
+/* 관리자 대시보드(z 90) 위에서 엔진 창(운영 관제실 등, z 70)이 뒤에 깔려 안 보이던 문제 — 관리자 화면이 열려 있으면 엔진 창을 그 위로 (2026-10-30) */
+(function(){
+  const st=document.createElement("style"); st.textContent="body:has(#adminView.open) #engview{z-index:95}"; document.head.appendChild(st);
+  const oe=window.openEngine; if(typeof oe!=="function") return;
+  window.openEngine=function(){ const r=oe.apply(this,arguments);
+    try{ const a=document.getElementById("adminView"), ev=document.getElementById("engview"); if(ev) ev.style.zIndex=(a&&a.classList.contains("open"))?"95":""; }catch(e){}
+    return r; };
+})();
+
+</script>
 </body>
 </html>
