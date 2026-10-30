@@ -8693,17 +8693,45 @@ window.G5_CUT2={"행정(일반행정:전국)":["52.83","61.48","뉴시스 2025-0
   }
   window.g5DiagBoth=function(){
     const c1=cut1HTML(), c2=cut2HTML(), h1=grab(o1), h2=grab(o2);
-    const box=document.getElementById("g5dBox"); box.classList.add("both");
+    const box=document.getElementById("g5dBox"); box.classList.add("both"); box.style.maxWidth="";
     box.innerHTML='<button class="x" aria-label="닫기" onclick="document.getElementById(\'g5dModal\').classList.remove(\'on\')">✕</button>'+
       '<div class="g5both-h"><h3>🎯 5급공채 합격 진단</h3><small style="color:#6a7385">1차와 2차를 같은 해에 함께 합격해야 하므로 항상 나란히 봅니다</small></div>'+
       '<div class="g5two"><div class="g5col"><span class="g5tag">1차</span>'+h1+c1+'</div><div class="g5col"><span class="g5tag">2차</span>'+h2+c2+'</div></div>';
+    document.getElementById("g5dModal").classList.add("on");
+  };
+  /* ── 아래(공부 상태 바) 단추: 지금 상태만 간단히 — 1차 | 2차 나란히 · 자세한 것은 위 머리 단추의 큰 창 (2026-10-30) ── */
+  window.g5DiagMini=function(){
+    const j=jik(), A1=CUT1[CUT1[j]?j:"일반행정"], B1=band(A1,2.5), A2=CUT2[(CUT2[j]&&CUT2[j].length>=3)?j:"일반행정"], B2=band(A2,1);
+    let v={}; try{ v=JSON.parse(localStorage.getItem("g5_psat_scores")||"{}")||{}; }catch(e){}
+    const P=["언어논리","자료해석","상황판단"], p=P.map(function(k){ return v[k]==null||v[k]===""?null:+v[k]; }).filter(function(x){ return x!=null; });
+    let L=[]; try{ L=(window.laws2Of?laws2Of():[])||[]; }catch(e){}
+    let lg={}; try{ lg=(JSON.parse(localStorage.getItem("cc_learnlog")||"{}")||{}).s||{}; }catch(e){}
+    const s2=L.map(function(l){ const o=lg[l]; return o&&o.scn?o.sc/o.scn:null; }).filter(function(x){ return x!=null; });
+    const judge=function(avg,low,B){ if(avg==null) return ['⚪','기록 없음','#7a7f8c']; if(low<40) return ['🔴','과락 위험','#c0392b']; if(avg>=B.S) return ['🟢','안정권','#2f7d4f']; if(avg>=B.M) return ['🟡','합격권','#b8860b']; return ['🔴','위험','#c0392b']; };
+    const card=function(tag,title,avg,low,B,n,extra,empty){
+      const J=judge(avg,low,B), gap=avg==null?null:Math.round((B.S-avg)*10)/10;
+      return '<div class="g5col" style="text-align:center"><span class="g5tag">'+tag+'</span><div style="font-size:13px;color:#6a7385;margin:4px 0 8px">'+title+'</div>'+
+        '<div style="font-size:30px;line-height:1.2">'+J[0]+'</div><div style="font-size:20px;font-weight:800;color:'+J[2]+'">'+J[1]+'</div>'+
+        (avg==null?'<div style="font-size:12.5px;color:#6a7385;margin-top:6px">'+empty+'</div>':
+          '<div style="font-size:14px;margin-top:6px">지금 평균 <b>'+f1(Math.round(avg*10)/10)+'점</b>'+(n>1?' · 총점 '+f1(Math.round(avg*n))+'점':'')+'</div>'+
+          '<div style="font-size:12.5px;color:#6a7385;margin-top:2px">'+(gap>0?'안정권('+f1(B.S)+'점)까지 <b>+'+f1(gap)+'점</b>':'안정권('+f1(B.S)+'점) 달성')+'</div>')+
+        (extra||'')+'</div>'; };
+    const law=v["헌법"]==null||v["헌법"]===""?null:+v["헌법"];
+    const lawTxt='<div style="font-size:12.5px;margin-top:6px">헌법 '+(law==null?'<span style="color:#7a7f8c">기록 없음</span>':(law>=60?'<b style="color:#2f7d4f">통과</b> ('+law+'점)':'<b style="color:#c0392b">미통과</b> ('+law+'점)'))+'</div>';
+    const a1=p.length===3?p.reduce(function(a,b){ return a+b; },0)/3:null, a2=s2.length?s2.reduce(function(a,b){ return a+b; },0)/s2.length:null;
+    const box=document.getElementById("g5dBox"); box.classList.add("both"); box.style.maxWidth="720px";
+    box.innerHTML='<button class="x" aria-label="닫기" onclick="document.getElementById(\'g5dModal\').classList.remove(\'on\')">✕</button>'+
+      '<div class="g5both-h"><h3>🎯 지금 내 상태</h3><small style="color:#6a7385">1차 · 2차 함께</small></div>'+
+      '<div class="g5two">'+card("1차","PSAT 3영역",a1,p.length?Math.min.apply(null,p):100,B1,3,lawTxt,'위쪽 「🎯 1차·2차 합격 진단」에서 최근 모의고사 점수를 넣으면 판정합니다')+
+      card("2차",L.length+"과목 논술",a2,s2.length?Math.min.apply(null,s2):100,B2,L.length,'','과목별실전문제풀이에서 채점받은 답안이 쌓이면 판정합니다')+'</div>'+
+      '<div style="text-align:center;margin-top:14px"><button class="mini" style="font:inherit;font-size:13px;padding:8px 16px;border-radius:9px;border:1px solid #0D1F3C;background:#0D1F3C;color:#fff;cursor:pointer" onclick="g5DiagBoth()">🔎 자세히 보기 — 안정권 계산 · 과목 조합</button></div>';
     document.getElementById("g5dModal").classList.add("on");
   };
   window.g5Diag1=function(){ return g5DiagBoth(); };
   window.g5Diag2=function(){ return g5DiagBoth(); };
   /* 단추: 1차 · 2차 두 개 → 「🎯 1차·2차 합격 진단」 하나 */
   function fix(){
-    const d=document.getElementById("g5dx"); if(d&&!d.__both){ d.__both=1; d.innerHTML='<button type="button" onclick="g5DiagBoth()" title="1차 PSAT·헌법 | 2차 논술 — 나란히">🎯 1차·2차 합격 진단</button>'; }
+    const d=document.getElementById("g5dx"); if(d&&!d.__both){ d.__both=1; d.innerHTML='<button type="button" onclick="g5DiagMini()" title="지금 내 상태 — 1차 | 2차 간단히">🎯 지금 내 상태</button>'; }
     const b=document.getElementById("nmdBtn"), c=document.getElementById("nmdBtn2");
     if(b){ b.textContent="🎯 1차·2차 합격 진단"; b.onclick=function(){ g5DiagBoth(); }; b.title="1차 | 2차 나란히"; }
     if(c) c.remove();
